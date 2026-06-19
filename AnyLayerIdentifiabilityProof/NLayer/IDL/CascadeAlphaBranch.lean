@@ -49,23 +49,6 @@ noncomputable def eventuallyExpClose_gate_alpha_of_slope_zero
   rw [hgate τ]
   exact hsig.bound τ hτ
 
-/-- Actual first-layer/running-gate form of the alpha estimate.  This is the direct
-`firstLayerGate` wrapper: the actual slope is the bilinear form along the running path. -/
-noncomputable def eventuallyExpClose_firstLayerGate_alpha_of_slope_zero {d : Nat}
-    (r : Nat) (A : Matrix (Fin d) (Fin d) ℝ)
-    (P : ℝ -> ProbePoint d)
-    (hlam :
-      EventuallyExpClose (fun τ => matrixBilin A (P τ).1 (P τ).2) 0) :
-    EventuallyExpClose
-      (fun τ => firstLayerGate r A (P τ).1 (P τ).2 τ)
-      (sig (Real.log (r : ℝ))) :=
-  eventuallyExpClose_gate_alpha_of_slope_zero
-    (gate := fun τ => firstLayerGate r A (P τ).1 (P τ).2 τ)
-    (lam := fun τ => matrixBilin A (P τ).1 (P τ).2)
-    (b := Real.log (r : ℝ))
-    (by intro τ; rfl)
-    hlam
-
 /-! ## The zero curve from affine `gamma` -/
 
 /-- An affine `gamma` is identically zero once it vanishes at `0` and `1`. -/

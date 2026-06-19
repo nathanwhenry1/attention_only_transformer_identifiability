@@ -410,40 +410,6 @@ theorem dotProduct_mul_coord_sub_dotProduct_mul_coord_eq_zero_of_forall_mem_open
     nlinarith
   exact (mul_eq_zero.mp htz).resolve_left (pow_ne_zero 2 ht_ne)
 
-/-- If a linear form vanishes on the orthogonal hyperplane to a nonzero vector, then it
-is a scalar multiple of that vector. -/
-theorem vector_eq_smul_of_forall_dotProduct_eq_zero
-    {d : Nat} {a m : Fin d -> ℝ} (ha : a ≠ 0)
-    (h : ∀ v : Fin d -> ℝ, dotProduct a v = 0 -> dotProduct m v = 0) :
-    ∃ c : ℝ, m = c • a := by
-  classical
-  have hcoord : ∃ i : Fin d, a i ≠ 0 := by
-    by_contra hzero
-    apply ha
-    ext i
-    exact by_contra fun hi => hzero ⟨i, hi⟩
-  rcases hcoord with ⟨i, hi⟩
-  refine ⟨m i / a i, ?_⟩
-  ext j
-  by_cases hji : j = i
-  · subst j
-    simp [Pi.smul_apply]
-    field_simp [hi]
-  · let v : Fin d -> ℝ := Pi.single j (a i) - Pi.single i (a j)
-    have hv_orth : dotProduct a v = 0 := by
-      change dotProduct a (Pi.single j (a i) - Pi.single i (a j)) = 0
-      rw [dotProduct_comm, sub_dotProduct, single_dotProduct, single_dotProduct]
-      ring
-    have hv_m := h v hv_orth
-    change dotProduct m (Pi.single j (a i) - Pi.single i (a j)) = 0 at hv_m
-    rw [dotProduct_comm, sub_dotProduct, single_dotProduct, single_dotProduct] at hv_m
-    have hmul : m j * a i = m i * a j := by
-      nlinarith
-    rw [Pi.smul_apply]
-    change m j = (m i / a i) * a j
-    field_simp [hi]
-    exact hmul
-
 /-- A matrix that sends every vector to a scalar multiple of itself is scalar, in
 dimension at least two. -/
 theorem matrix_eq_smul_one_of_forall_mulVec_eq_smul_self {d : Nat}
@@ -578,51 +544,6 @@ theorem matrix_eq_smul_of_forall_mulVec_eq_smul_on_open {d : Nat}
   have hmul := congrArg (fun Q : Matrix (Fin d) (Fin d) ℝ => Q * N) hPscalar
   simpa [P, Matrix.mul_assoc, Matrix.nonsing_inv_mul N (Ne.isUnit hdetN)] using hmul
 
-/-- Full nonsingular bilinear quadrics determine the bilinear form up to scale. -/
-theorem matrix_eq_smul_of_forall_bilin_eq_zero_on_quadric
-    {d : Nat} {A X : Matrix (Fin d) (Fin d) ℝ}
-    (hd : 2 ≤ d) (hdet : A.det ≠ 0)
-    (h :
-      ∀ w v : Fin d -> ℝ,
-        matrixBilin A w v = 0 -> matrixBilin X w v = 0) :
-    ∃ c : ℝ, X = c • A := by
-  classical
-  let AT : Matrix (Fin d) (Fin d) ℝ := Aᵀ
-  let M : Matrix (Fin d) (Fin d) ℝ := Xᵀ * AT⁻¹
-  have hdetAT : AT.det ≠ 0 := by
-    simpa [AT] using hdet
-  have hline :
-      ∀ z : Fin d -> ℝ, ∃ c : ℝ, M *ᵥ z = c • z := by
-    intro z
-    by_cases hz : z = 0
-    · refine ⟨0, ?_⟩
-      simp [M, hz]
-    · let w : Fin d -> ℝ := AT⁻¹ *ᵥ z
-      have hATw : AT *ᵥ w = z := by
-        have hprod : (AT * AT⁻¹) *ᵥ z = z := by
-          rw [Matrix.mul_nonsing_inv AT (Ne.isUnit hdetAT), Matrix.one_mulVec]
-        simpa [w, Matrix.mulVec_mulVec] using hprod
-      have horth :
-          ∀ v : Fin d -> ℝ, dotProduct z v = 0 ->
-            dotProduct (Xᵀ *ᵥ w) v = 0 := by
-        intro v hv
-        have hquad : matrixBilin A w v = 0 := by
-          rw [matrixBilin_eq_transpose_dot]
-          simpa [AT, hATw] using hv
-        have hx := h w v hquad
-        simpa [matrixBilin_eq_transpose_dot] using hx
-      rcases vector_eq_smul_of_forall_dotProduct_eq_zero hz horth with ⟨c, hc⟩
-      refine ⟨c, ?_⟩
-      simpa [M, w, Matrix.mulVec_mulVec] using hc
-  rcases matrix_eq_smul_one_of_forall_mulVec_eq_smul_self hd M hline with ⟨c, hM⟩
-  refine ⟨c, ?_⟩
-  have hXT : Xᵀ = c • Aᵀ := by
-    have hmul := congrArg (fun N : Matrix (Fin d) (Fin d) ℝ => N * AT) hM
-    simpa [M, AT, Matrix.mul_assoc, Matrix.nonsing_inv_mul AT (Ne.isUnit hdetAT)]
-      using hmul
-  have hXT' := congrArg Matrix.transpose hXT
-  simpa using hXT'
-
 /-- A reduced solved-coordinate chart witness that separates scalar linear forms on a
 selected subset of the bilinear quadric.
 
@@ -721,52 +642,12 @@ theorem matrix_eq_of_basis_bilin_eq {d : Nat}
   ext i j
   simpa [matrixBilin_single_single] using h i j
 
-/-- Coordinate-probe bilinear equality is equivalent to matrix equality. -/
-theorem matrix_eq_iff_basis_bilin_eq {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ} :
-    A = A' ↔
-      ∀ i j : Fin d,
-        matrixBilin A (Pi.single i 1) (Pi.single j 1) =
-          matrixBilin A' (Pi.single i 1) (Pi.single j 1) := by
-  constructor
-  · intro h i j
-    rw [h]
-  · exact matrix_eq_of_basis_bilin_eq
-
-/-- Difference-form coordinate-probe endpoint. -/
-theorem matrix_eq_of_basis_bilin_sub_eq_zero {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (h : ∀ i j : Fin d,
-      matrixBilin (A - A') (Pi.single i 1) (Pi.single j 1) = 0) :
-    A = A' := by
-  apply matrix_eq_of_basis_bilin_eq
-  intro i j
-  exact sub_eq_zero.mp (by simpa [matrixBilin_sub] using h i j)
-
 /-- If two matrices have the same bilinear form on all probes, they are equal. -/
 theorem matrix_eq_of_forall_bilin_eq {d : Nat}
     {A A' : Matrix (Fin d) (Fin d) ℝ}
     (h : ∀ w v : Fin d -> ℝ, matrixBilin A w v = matrixBilin A' w v) :
     A = A' :=
   matrix_eq_of_basis_bilin_eq fun i j => h (Pi.single i 1) (Pi.single j 1)
-
-/-- Pair-valued wrapper for all-probe bilinear equality. -/
-theorem matrix_eq_of_forall_pair_bilin_eq {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (h : ∀ p : (Fin d -> ℝ) × (Fin d -> ℝ),
-      matrixBilin A p.1 p.2 = matrixBilin A' p.1 p.2) :
-    A = A' :=
-  matrix_eq_of_forall_bilin_eq fun w v => h (w, v)
-
-/-- All-probe bilinear equality is equivalent to matrix equality. -/
-theorem matrix_eq_iff_forall_bilin_eq {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ} :
-    A = A' ↔
-      ∀ w v : Fin d -> ℝ, matrixBilin A w v = matrixBilin A' w v := by
-  constructor
-  · intro h w v
-    rw [h]
-  · exact matrix_eq_of_forall_bilin_eq
 
 /-- Vanishing of the difference bilinear form on all probes identifies the matrix. -/
 theorem matrix_eq_of_forall_bilin_sub_eq_zero {d : Nat}
@@ -777,31 +658,6 @@ theorem matrix_eq_of_forall_bilin_sub_eq_zero {d : Nat}
   intro w v
   have hsub := h w v
   exact (matrixBilin_eq_iff_sub_eq_zero A A' w v).mpr hsub
-
-/-- All-probe difference-form bilinear vanishing is equivalent to matrix equality. -/
-theorem matrix_eq_iff_forall_bilin_sub_eq_zero {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ} :
-    A = A' ↔ ∀ w v : Fin d -> ℝ, matrixBilin (A - A') w v = 0 := by
-  constructor
-  · intro h w v
-    subst A'
-    simp [matrixBilin]
-  · exact matrix_eq_of_forall_bilin_sub_eq_zero
-
-/-- Subtraction-after-evaluation form of the all-probe bilinear endpoint. -/
-theorem matrix_eq_of_forall_bilin_eq_sub_eq_zero {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (h : ∀ w v : Fin d -> ℝ, matrixBilin A w v - matrixBilin A' w v = 0) :
-    A = A' :=
-  matrix_eq_of_forall_bilin_eq fun w v => sub_eq_zero.mp (h w v)
-
-/-- Pair-valued wrapper for the difference-form all-probe endpoint. -/
-theorem matrix_eq_of_forall_pair_bilin_sub_eq_zero {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (h : ∀ p : (Fin d -> ℝ) × (Fin d -> ℝ),
-      matrixBilin (A - A') p.1 p.2 = 0) :
-    A = A' :=
-  matrix_eq_of_forall_bilin_sub_eq_zero fun w v => h (w, v)
 
 /-- Constructor package for bilinear equality of two matrices. -/
 structure MatrixBilinearEqualityData {d : Nat}
@@ -827,12 +683,6 @@ structure MatrixBilinearSubZeroData {d : Nat}
 namespace MatrixBilinearSubZeroData
 
 variable {d : Nat} {A A' : Matrix (Fin d) (Fin d) ℝ}
-
-/-- Convert difference-form data to direct bilinear equality data. -/
-def toBilinearEqualityData (D : MatrixBilinearSubZeroData A A') :
-    MatrixBilinearEqualityData A A' where
-  bilin_eq := fun w v => (matrixBilin_eq_iff_sub_eq_zero A A' w v).mpr
-    (D.bilin_sub_eq_zero w v)
 
 /-- Compile packaged difference-form bilinear vanishing to matrix equality. -/
 theorem matrix_eq (D : MatrixBilinearSubZeroData A A') :
@@ -885,14 +735,6 @@ theorem tailPolynomial_ne_zero_of_norm_tail_lt {α : Type*} {D : Nat}
       ‖lead x * z ^ D‖ = ‖∑ i : Fin D, lower i x * z ^ (i : Nat)‖ := by
     rw [hlead_eq, norm_neg]
   linarith
-
-/-- The `D = 0` branch of Lemma `nested`, Step 2: if the polynomial does not involve
-the last variable, zero-freeness is just zero-freeness of the leading coefficient. -/
-theorem tailPolynomial_ne_zero_of_degree_zero {α : Type*}
-    {lead : α -> ℂ} {lower : Fin 0 -> α -> ℂ} {x : α} {z : ℂ}
-    (hlead : lead x ≠ 0) :
-    tailPolynomial 0 lead lower x z ≠ 0 := by
-  simpa [tailPolynomial] using hlead
 
 /-- The explicit threshold from Lemma `nested`, Step 2, makes the leading term dominate
 the lower-order tail. -/

@@ -106,22 +106,6 @@ def ofConcrete (hm : 0 < m) (basepoint : ℂ)
     simpa [ConcreteStratification.singularSet, hlast] using hIso
   last_tier_blowsUp := last_tier_blowsUp
 
-/-- Build the transfer package from real-tail agreement at a real basepoint. -/
-def ofConcreteWithRealTail (hm : 0 < m) (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (last_tier_blowsUp :
-      ∀ τ, τ ∈ A.T (m - 1) -> BlowsUpAt A.stratification.observable τ) :
-    LastTierTransferData unprimed A :=
-  LastTierTransferData.ofConcrete (unprimed := unprimed) (A := A)
-    hm (basepoint : ℂ) basepoint_regular
-    (frequently_equal_of_eqOn_real_tail tail_basepoint eqOnTail)
-    last_tier_blowsUp
-
 /-- Build the transfer package from the concrete stratification interfaces and the
 packaged Claim C last-tier blow-up result. -/
 def ofConcreteWithBlowup (hm : 0 < m) (basepoint : ℂ)
@@ -205,74 +189,6 @@ theorem subset_partialUnion (D : LastTierTransferData unprimed A) :
     A.T (m - 1) ⊆ partialUnion unprimed.S m := by
   simpa [ConcreteStratification.singularSet] using D.subset_singularSet
 
-/-- Direct Claim-D singular-set conclusion from real-tail agreement and packaged Claim C
-blow-up. -/
-theorem subset_singularSet_ofConcreteWithBlowupRealTail (hm : 0 < m)
-    (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  (LastTierTransferData.ofConcreteWithBlowupRealTail
-    (unprimed := unprimed) (A := A)
-    hm basepoint T0 tail_basepoint basepoint_regular eqOnTail B).subset_singularSet
-
-/-- Direct Claim-D partial-union conclusion from real-tail agreement and packaged Claim C
-blow-up. -/
-theorem subset_partialUnion_ofConcreteWithBlowupRealTail (hm : 0 < m)
-    (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  (LastTierTransferData.ofConcreteWithBlowupRealTail
-    (unprimed := unprimed) (A := A)
-    hm basepoint T0 tail_basepoint basepoint_regular eqOnTail B).subset_partialUnion
-
-/-- Direct Claim-D singular-set conclusion from only real-tail agreement and packaged
-Claim C blow-up. -/
-theorem subset_singularSet_ofConcreteWithBlowupOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  (LastTierTransferData.ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B).subset_singularSet
-
-/-- Direct Claim-D partial-union conclusion from only real-tail agreement and packaged
-Claim C blow-up. -/
-theorem subset_partialUnion_ofConcreteWithBlowupOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  (LastTierTransferData.ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B).subset_partialUnion
-
-/-- Direct Claim-D singular-set conclusion from only real-tail agreement and concrete
-Claim C obligations. -/
-theorem subset_singularSet_ofConcreteDataOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (C : LastTierConcreteData A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  (LastTierTransferData.ofConcreteWithConcreteDataOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail C).subset_singularSet
-
 /-- Direct Claim-D partial-union conclusion from only real-tail agreement and concrete
 Claim C obligations. -/
 theorem subset_partialUnion_ofConcreteDataOnRealTail (hm : 0 < m) (T0 : ℝ)
@@ -352,22 +268,6 @@ def ofConcrete (hm : 0 < m) (basepoint : ℂ)
     have hlast : (m - 1) + 1 = m := by omega
     simpa [ConcreteStratification.singularSet, hlast] using hIso
   last_tier_blowsUp := last_tier_blowsUp
-
-/-- Build the zero-free transfer package from real-tail agreement at a real basepoint. -/
-def ofConcreteWithRealTail (hm : 0 < m) (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (last_tier_blowsUp :
-      ∀ τ, τ ∈ A.T0 (m - 1) -> BlowsUpAt A.stratification.observable τ) :
-    ZeroFreeLastTierTransferData unprimed A :=
-  ZeroFreeLastTierTransferData.ofConcrete (unprimed := unprimed) (A := A)
-    hm (basepoint : ℂ) basepoint_regular
-    (frequently_equal_of_eqOn_real_tail tail_basepoint eqOnTail)
-    last_tier_blowsUp
 
 /-- Build the zero-free transfer package from packaged zero-free Claim C blow-up. -/
 def ofConcreteWithBlowup (hm : 0 < m) (basepoint : ℂ)
@@ -452,42 +352,6 @@ theorem subset_partialUnion (D : ZeroFreeLastTierTransferData unprimed A) :
     A.T0 (m - 1) ⊆ partialUnion unprimed.S m := by
   simpa [ConcreteStratification.singularSet] using D.subset_singularSet
 
-/-- Direct zero-free Claim-D singular-set conclusion from only real-tail agreement and
-packaged zero-free Claim C blow-up. -/
-theorem subset_singularSet_ofConcreteWithBlowupOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : ZeroFreeLastTierBlowup A) :
-    A.T0 (m - 1) ⊆ unprimed.singularSet :=
-  (ZeroFreeLastTierTransferData.ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B).subset_singularSet
-
-/-- Direct zero-free Claim-D partial-union conclusion from only real-tail agreement and
-packaged zero-free Claim C blow-up. -/
-theorem subset_partialUnion_ofConcreteWithBlowupOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : ZeroFreeLastTierBlowup A) :
-    A.T0 (m - 1) ⊆ partialUnion unprimed.S m :=
-  (ZeroFreeLastTierTransferData.ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B).subset_partialUnion
-
-/-- Direct zero-free Claim-D singular-set conclusion from only real-tail agreement and
-concrete Claim C obligations. -/
-theorem subset_singularSet_ofConcreteDataOnRealTail (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (C : LastTierConcreteData A) :
-    A.T0 (m - 1) ⊆ unprimed.singularSet :=
-  (ZeroFreeLastTierTransferData.ofConcreteWithConcreteDataOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail C).subset_singularSet
-
 /-- Direct zero-free Claim-D partial-union conclusion from only real-tail agreement and
 concrete Claim C obligations. -/
 theorem subset_partialUnion_ofConcreteDataOnRealTail (hm : 0 < m) (T0 : ℝ)
@@ -501,164 +365,6 @@ theorem subset_partialUnion_ofConcreteDataOnRealTail (hm : 0 < m) (T0 : ℝ)
     hm T0 eqOnTail C).subset_partialUnion
 
 end ZeroFreeLastTierTransferData
-
-/-- Claim D endpoint: the last generic tier lies in the unprimed singular set. -/
-theorem transferred_lastTier_subset_singularSet {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (D : LastTierTransferData unprimed A) (_hm : 0 < m) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  D.subset_singularSet
-
-/-- Claim D endpoint rewritten as inclusion in `partialUnion unprimed.S m`. -/
-theorem transferred_lastTier_subset_partialUnion {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (D : LastTierTransferData unprimed A) (_hm : 0 < m) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  D.subset_partialUnion
-
-/-- Claim D endpoint from real-tail agreement and packaged Claim C blow-up. -/
-theorem transferred_lastTier_subset_singularSet_ofConcreteWithBlowupRealTail {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  LastTierTransferData.subset_singularSet_ofConcreteWithBlowupRealTail
-    (unprimed := unprimed) (A := A)
-    hm basepoint T0 tail_basepoint basepoint_regular eqOnTail B
-
-/-- Claim D endpoint from real-tail agreement and packaged Claim C blow-up, unfolded to
-the concrete partial-union notation. -/
-theorem transferred_lastTier_subset_partialUnion_ofConcreteWithBlowupRealTail {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (basepoint T0 : ℝ)
-    (tail_basepoint : T0 < basepoint)
-    (basepoint_regular :
-      (basepoint : ℂ) ∈ (unprimed.singularSet ∪ A.stratification.singularSet)ᶜ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  LastTierTransferData.subset_partialUnion_ofConcreteWithBlowupRealTail
-    (unprimed := unprimed) (A := A)
-    hm basepoint T0 tail_basepoint basepoint_regular eqOnTail B
-
-/-- Claim D endpoint from only real-tail agreement and packaged Claim C blow-up. -/
-theorem transferred_lastTier_subset_singularSet_ofConcreteWithBlowupOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  LastTierTransferData.subset_singularSet_ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B
-
-/-- Claim D endpoint from only real-tail agreement and packaged Claim C blow-up,
-unfolded to the concrete partial-union notation. -/
-theorem transferred_lastTier_subset_partialUnion_ofConcreteWithBlowupOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : LastTierBlowup A) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  LastTierTransferData.subset_partialUnion_ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B
-
-/-- Claim D endpoint from only real-tail agreement and concrete Claim C obligations. -/
-theorem transferred_lastTier_subset_singularSet_ofConcreteDataOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (C : LastTierConcreteData A) :
-    A.T (m - 1) ⊆ unprimed.singularSet :=
-  LastTierTransferData.subset_singularSet_ofConcreteDataOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail C
-
-/-- Claim D endpoint from only real-tail agreement and concrete Claim C obligations,
-unfolded to the concrete partial-union notation. -/
-theorem transferred_lastTier_subset_partialUnion_ofConcreteDataOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (C : LastTierConcreteData A) :
-    A.T (m - 1) ⊆ partialUnion unprimed.S m :=
-  LastTierTransferData.subset_partialUnion_ofConcreteDataOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail C
-
-/-- Zero-free Claim D endpoint: the additive zero-free last generic tier lies in the
-unprimed singular set. -/
-theorem transferred_zeroFreeLastTier_subset_singularSet {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (D : ZeroFreeLastTierTransferData unprimed A) (_hm : 0 < m) :
-    A.T0 (m - 1) ⊆ unprimed.singularSet :=
-  D.subset_singularSet
-
-/-- Zero-free Claim D endpoint rewritten as inclusion in `partialUnion unprimed.S m`. -/
-theorem transferred_zeroFreeLastTier_subset_partialUnion {m : Nat}
-    {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (D : ZeroFreeLastTierTransferData unprimed A) (_hm : 0 < m) :
-    A.T0 (m - 1) ⊆ partialUnion unprimed.S m :=
-  D.subset_partialUnion
-
-/-- Zero-free Claim D endpoint from real-tail agreement and packaged zero-free
-Claim C blow-up. -/
-theorem transferred_zeroFreeLastTier_subset_singularSet_ofConcreteWithBlowupOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : ZeroFreeLastTierBlowup A) :
-    A.T0 (m - 1) ⊆ unprimed.singularSet :=
-  ZeroFreeLastTierTransferData.subset_singularSet_ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B
-
-/-- Zero-free Claim D endpoint from real-tail agreement and packaged zero-free
-Claim C blow-up, unfolded to the concrete partial-union notation. -/
-theorem transferred_zeroFreeLastTier_subset_partialUnion_ofConcreteWithBlowupOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (B : ZeroFreeLastTierBlowup A) :
-    A.T0 (m - 1) ⊆ partialUnion unprimed.S m :=
-  ZeroFreeLastTierTransferData.subset_partialUnion_ofConcreteWithBlowupOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail B
-
-/-- Zero-free Claim D endpoint from real-tail agreement and concrete Claim C
-obligations. -/
-theorem transferred_zeroFreeLastTier_subset_singularSet_ofConcreteDataOnRealTail
-    {m : Nat} {unprimed : ConcreteStratification m} {A : TierSystem m}
-    (hm : 0 < m) (T0 : ℝ)
-    (eqOnTail :
-      ∀ t : ℝ, T0 < t ->
-        unprimed.observable (t : ℂ) = A.stratification.observable (t : ℂ))
-    (C : LastTierConcreteData A) :
-    A.T0 (m - 1) ⊆ unprimed.singularSet :=
-  ZeroFreeLastTierTransferData.subset_singularSet_ofConcreteDataOnRealTail
-    (unprimed := unprimed) (A := A)
-    hm T0 eqOnTail C
 
 /-- Zero-free Claim D endpoint from real-tail agreement and concrete Claim C
 obligations, unfolded to the concrete partial-union notation. -/

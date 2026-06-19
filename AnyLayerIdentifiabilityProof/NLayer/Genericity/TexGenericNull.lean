@@ -60,17 +60,6 @@ theorem texGenericBadSet_null_of_paramNonvanishingCarrier_subset
   intro θ hθ hθpoly
   exact hθ (hsubset hθpoly)
 
-/-- Equality with a finite coordinate-polynomial nonvanishing carrier is a special case
-of the subset interface. -/
-theorem texGenericBadSet_null_of_paramNonvanishingCarrier_eq
-    {L d : Nat} {κ : Type*}
-    (D : PolynomialNonvanishingData (ParamCoord L d) κ)
-    (hcarrier : paramNonvanishingCarrier D = TexGenericSet L d) :
-    volume (TexGenericBadSet L d : Set (Params L d)) = 0 :=
-  texGenericBadSet_null_of_paramNonvanishingCarrier_subset D (by
-    intro θ hθ
-    simpa [hcarrier] using hθ)
-
 /-- Packaged version of `texGenericBadSet_null_of_paramNonvanishingCarrier_subset`. -/
 theorem texGenericBadSet_null_of_polynomialNonvanishingCover
     {L d : Nat} (C : TexGenericPolynomialNonvanishingCover L d) :

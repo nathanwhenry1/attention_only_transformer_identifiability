@@ -42,10 +42,6 @@ noncomputable def Msolve (V : Matrix (Fin d) (Fin d) ℝ) (s : ℝ) :
     Matrix (Fin d) (Fin d) ℝ :=
   skipB V - s • V
 
-theorem Msolve_eq_anchorStepMatrix (V A : Matrix (Fin d) (Fin d) ℝ) (s : ℝ) :
-    Msolve V s = anchorStepMatrix (fun _ => (V, A)) 0 s :=
-  rfl
-
 /-- `(B − sV) *ᵥ w` written out. -/
 theorem Msolve_mulVec (V : Matrix (Fin d) (Fin d) ℝ) (s : ℝ) (w : Fin d → ℝ) :
     Msolve V s *ᵥ w = w + V.mulVec w - s • V.mulVec w := by
@@ -326,7 +322,6 @@ theorem hasStrictDerivAt_Ffun_anchor (r : ℕ) (V A : Matrix (Fin d) (Fin d) ℝ
     ring
   rw [← hcollapse]
   simp only [matrixBilin, hwsolp]
-
 
 /-! ## Step 4. The augmented inverse-function-theorem map
 
@@ -614,7 +609,6 @@ theorem Ffun_joint_deriv_sdir (r : ℕ) (V A : Matrix (Fin d) (Fin d) ℝ)
       (- texSweepVartheta0 V A (w0, v0) t) t := hasStrictDerivAt_Ffun_anchor r V A t w0 v0 hB hMt
   exact hcomp.hasDerivAt.unique hscalar.hasDerivAt
 
-
 /-! ## Step 4 derivative + equiv assembly (toward the unconditional theorem) -/
 
 -- augΦ joint derivative
@@ -625,7 +619,6 @@ noncomputable def augΦ' (F' : Pdom d →L[ℝ] ℝ) : Pdom d →L[ℝ] Pdom d :
       (ContinuousLinearMap.snd ℝ ℝ (ProbePoint d × ℝ))))
 @[simp] theorem augΦ'_apply (F' : Pdom d →L[ℝ] ℝ) (z : Pdom d) :
     augΦ' F' z = (F' z, z.2.1, z.2.2) := rfl
-
 
 theorem hsfd_augΦ (r : ℕ) (V A : Matrix (Fin d) (Fin d) ℝ) (a : Pdom d)
     (ht0 : 0 < a.1) (ht1 : a.1 < 1) (hMt : (Msolve V a.1).det ≠ 0) :
@@ -645,7 +638,6 @@ theorem hsfd_augΦ (r : ℕ) (V A : Matrix (Fin d) (Fin d) ℝ) (a : Pdom d)
         (ContinuousLinearMap.snd ℝ ℝ (ProbePoint d × ℝ))).hasStrictFDerivAt
   exact hF'.prodMk (hπ1.prodMk hπ2)
 
-
 -- zero-out-first-coordinate CLM:  z ↦ (0, z.2.1, z.2.2)
 noncomputable def zeroFirstCLM : Pdom d →L[ℝ] Pdom d :=
   (0 : Pdom d →L[ℝ] ℝ).prod (ContinuousLinearMap.snd ℝ ℝ (ProbePoint d × ℝ))
@@ -657,7 +649,6 @@ noncomputable def augΨ' (F' : Pdom d →L[ℝ] ℝ) (c : ℝ) : Pdom d →L[ℝ
     (ContinuousLinearMap.snd ℝ ℝ (ProbePoint d × ℝ))
 @[simp] theorem augΨ'_apply (F' : Pdom d →L[ℝ] ℝ) (c : ℝ) (z : Pdom d) :
     augΨ' F' c z = (c⁻¹ * (z.1 - F' (0, z.2.1, z.2.2)), z.2.1, z.2.2) := rfl
-
 
 -- F' decomposes:  F' z = z.1 * F'(1,0,0) + F'(0, z.2.1, z.2.2)
 theorem F'_decomp (F' : Pdom d →L[ℝ] ℝ) (z : Pdom d) :
@@ -692,7 +683,6 @@ noncomputable def augEquiv (F' : Pdom d →L[ℝ] ℝ) (hc : F' (1, 0, 0) ≠ 0)
       · rfl)
 @[simp] theorem augEquiv_coe (F' : Pdom d →L[ℝ] ℝ) (hc : F' (1, 0, 0) ≠ 0) :
     (↑(augEquiv F' hc) : Pdom d →L[ℝ] Pdom d) = augΦ' F' := rfl
-
 
 /-- **PRIMARY: the unconditional pointwise realization theorem.**
 Steps 1-5 of `SWEEP_PLAN.md`, fully discharged.  From the anchor data and the nonzero

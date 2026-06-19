@@ -18,21 +18,6 @@ Target contents:
 Corresponds to `n_layer_proof.tex`, Section 5.
 -/
 
-/-- Claim C shape in `n_layer_proof.tex`, Proposition `A1`.
-
-The observable coordinate has the form `bounded + lastGate * visibleCoeff`; if the last
-gate blows up and the visible coefficient tends to a nonzero limit, then the observable
-coordinate blows up.
--/
-theorem observable_blowUpAt_of_last_gate {bounded lastGate visible : ℂ -> ℂ}
-    {τ visible0 : ℂ}
-    (hbounded : PuncturedBoundedAt bounded τ)
-    (hgate : BlowsUpAt lastGate τ)
-    (hvisible : Filter.Tendsto visible (nhdsWithin τ ({τ}ᶜ : Set ℂ)) (nhds visible0))
-    (hvisible0 : visible0 ≠ 0) :
-    BlowsUpAt (fun z => bounded z + lastGate z * visible z) τ :=
-  hgate.bounded_add_mul_tendsto_ne_zero hbounded hvisible hvisible0
-
 /-- Claim D shape in `n_layer_proof.tex`, Proposition `A1`.
 
 If every point of the last generic tier is an isolated blowing-up point for the generic
@@ -198,23 +183,6 @@ theorem A1_eq_of_all_probe_slope_eq {d : Nat}
     A = A' :=
   matrix_eq_of_forall_bilin_eq hSlope
 
-/-- Pair-valued probe wrapper for the bilinear endpoint.  This matches downstream probe
-packages that carry `(w, v)` as one object. -/
-theorem A1_eq_of_pair_probe_slope_eq {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (hSlope :
-      ∀ p : (Fin d -> ℝ) × (Fin d -> ℝ),
-        matrixBilin A p.1 p.2 = matrixBilin A' p.1 p.2) :
-    A = A' :=
-  A1_eq_of_all_probe_slope_eq fun w v => hSlope (w, v)
-
-/-- Difference-form wrapper for the bilinear endpoint. -/
-theorem A1_eq_of_all_probe_slope_sub_eq_zero {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    (hSlope : ∀ w v : Fin d -> ℝ, matrixBilin (A - A') w v = 0) :
-    A = A' :=
-  matrix_eq_of_forall_bilin_sub_eq_zero hSlope
-
 /-- Probe-level slope equality package.
 
 The `extend` field is the exact algebraic-continuation obligation: equality proved on
@@ -346,12 +314,6 @@ theorem probe_slope_eq (D : ProbeTierDescentData (m := m) b A A' P S T)
     matrixBilin A w v = matrixBilin A' w v :=
   (D.toTierDescentSlopeData hP).slope_eq
 
-/-- Convert packaged tier descent into the generic probe-slope equality package. -/
-def toProbeSlopeEqualityData (D : ProbeTierDescentData (m := m) b A A' P S T) :
-    ProbeSlopeEqualityData A A' P where
-  slope_eq_on := fun w v hP => D.probe_slope_eq (w := w) (v := v) hP
-  extend := D.extend
-
 /-- Extend packaged descent equality to all probes. -/
 theorem all_probe_slope_eq (D : ProbeTierDescentData (m := m) b A A' P S T) :
     ∀ w v : Fin d -> ℝ, matrixBilin A w v = matrixBilin A' w v :=
@@ -363,14 +325,5 @@ theorem matrix_eq (D : ProbeTierDescentData (m := m) b A A' P S T) :
   A1_eq_of_all_probe_slope_eq D.all_probe_slope_eq
 
 end ProbeTierDescentData
-
-/-- Top-level wrapper around `ProbeTierDescentData.matrix_eq`. -/
-theorem A1_eq_of_probe_tier_descent_data {d m : Nat} {b : ℝ}
-    {A A' : Matrix (Fin d) (Fin d) ℝ}
-    {P : (Fin d -> ℝ) -> (Fin d -> ℝ) -> Prop}
-    {S T : (Fin d -> ℝ) -> (Fin d -> ℝ) -> Nat -> Set ℂ}
-    (D : ProbeTierDescentData (m := m) b A A' P S T) :
-    A = A' :=
-  D.matrix_eq
 
 end TransformerIdentifiability.NLayer

@@ -27,10 +27,6 @@ alias avoids depending on Step 1's concrete probe-region shard. -/
 abbrev AnchorProbe (d : Nat) : Type :=
   (Fin d -> ℝ) × (Fin d -> ℝ)
 
-/-- A finite family of anchor probes. -/
-abbrev AnchorFamily (n d : Nat) : Type :=
-  Fin n -> AnchorProbe d
-
 /-! ## Anchor transport and unwinding interfaces -/
 
 /-- A finite parameter tuple, viewed as a `Nat`-indexed layer stream with zero fallback
@@ -160,19 +156,6 @@ structure AnchorCertificateData (L d : Nat) where
 
 namespace AnchorCertificateData
 
-/-- Certificate package whose anchors are supplied in unwound form. -/
-def ofUnwound {L d : Nat} (certificate : Params L d -> Prop)
-    (hexists : ∀ θ, certificate θ -> (unwoundAnchorSet θ).Nonempty) :
-    AnchorCertificateData L d where
-  certificate := certificate
-  anchorSet := unwoundAnchorSet
-  anchors_exist := hexists
-
-theorem exists_anchor {L d : Nat} (C : AnchorCertificateData L d)
-    {θ : Params L d} (hθ : C.certificate θ) :
-    (C.anchorSet θ).Nonempty :=
-  C.anchors_exist θ hθ
-
 end AnchorCertificateData
 
 /-- A finite intersection of generic parameter conditions.
@@ -201,13 +184,6 @@ theorem anchorGenericSet_insert {ι : Type*} [DecidableEq ι] {L d : Nat}
     AnchorGenericSet (insert a I) G = G a ∩ AnchorGenericSet I G := by
   ext θ
   simp [AnchorGenericSet]
-
-theorem anchorGenericSet_mono {ι : Type*} {L d : Nat} {I : Finset ι}
-    {G H : ι -> Set (Params L d)}
-    (h : ∀ i, i ∈ I -> G i ⊆ H i) :
-    AnchorGenericSet I G ⊆ AnchorGenericSet I H := by
-  intro θ hθ
-  exact mem_anchorGenericSet.mpr fun i hi => h i hi (mem_anchorGenericSet.mp hθ i hi)
 
 theorem isOpen_anchorGenericSet {ι : Type*} {L d : Nat} {I : Finset ι}
     {G : ι -> Set (Params L d)}
@@ -250,10 +226,6 @@ theorem isOpen {L d : Nat} (G : AnchorGenericData L d) :
 theorem dense {L d : Nat} (G : AnchorGenericData L d) :
     Dense G.carrier :=
   G.dense_carrier
-
-theorem mem_carrier {L d : Nat} {G : AnchorGenericData L d} {θ : Params L d} :
-    θ ∈ G.carrier ↔ θ ∈ G.carrier :=
-  Iff.rfl
 
 /-- The whole parameter space as a trivial generic set. -/
 def univ (L d : Nat) : AnchorGenericData L d where

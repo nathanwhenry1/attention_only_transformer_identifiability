@@ -505,17 +505,6 @@ theorem no_eventuallyEq_of_continuousAt_of_blowsUpAt {F G : ℂ -> ℂ} {τ : �
   rw [hFG] at hFz
   linarith
 
-/-- Local form of pole transfer: if `F` would be continuous away from its exceptional set,
-then any punctured-neighborhood equality with a blowing-up `G` forces the point into that
-exceptional set. -/
-theorem pole_transfer_local {E_F : Set ℂ} {F G : ℂ -> ℂ} {τ : ℂ}
-    (hFcont : τ ∉ E_F -> ContinuousAt F τ)
-    (hEq : F =ᶠ[nhdsWithin τ ({τ}ᶜ : Set ℂ)] G)
-    (hG : BlowsUpAt G τ) :
-    τ ∈ E_F := by
-  by_contra hnot
-  exact no_eventuallyEq_of_continuousAt_of_blowsUpAt (hFcont hnot) hEq hG
-
 /-- Pole transfer after the global identity theorem has already identified `F` and `G`
 on the common regular domain.
 
@@ -839,20 +828,6 @@ noncomputable def firstPoleSet (b lam : ℝ) : Set ℂ :=
 theorem sigmoidPole_mem_firstPoleSet (b lam : ℝ) (n : ℤ) :
     sigmoidPole b lam n ∈ firstPoleSet b lam :=
   ⟨n, rfl⟩
-
-/-- Every point of the first pole set has real part `-b / lam`. -/
-theorem firstPoleSet_re {b lam : ℝ} (hlam : lam ≠ 0) {ζ : ℂ}
-    (hζ : ζ ∈ firstPoleSet b lam) :
-    ζ.re = -b / lam := by
-  rcases hζ with ⟨n, rfl⟩
-  exact sigmoidPole_re hlam n
-
-/-- Points of the first pole set are denominator zeros for the affine sigmoid. -/
-theorem affine_denom_zero_of_mem_firstPoleSet {b lam : ℝ} (hlam : lam ≠ 0) {ζ : ℂ}
-    (hζ : ζ ∈ firstPoleSet b lam) :
-    1 + Complex.exp (-((lam : ℂ) * ζ + (b : ℂ))) = 0 := by
-  rcases hζ with ⟨n, rfl⟩
-  exact inner_denom_sigmoidPole b lam hlam n
 
 /-- Step 1, final comparison: equality of one primed and one unprimed pole forces slopes equal. -/
 theorem slope_eq_of_sigmoidPole_eq {b lam lam' : ℝ} (hb : b ≠ 0)

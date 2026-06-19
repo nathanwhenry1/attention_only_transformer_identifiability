@@ -1133,11 +1133,6 @@ theorem texAnchorCertificate_hasConcreteWitness_zero (d : Nat) :
     · exact Fin.elim0 k
   simp [anchorCertificateValue]
 
-theorem texAnchorCertificate_auxPolynomial_ne_zero_zero (d : Nat) :
-    texAnchorCertificate_auxPolynomial 0 d ≠ 0 :=
-  texAnchorCertificate_auxPolynomial_ne_zero_of_concreteWitness
-    (texAnchorCertificate_hasConcreteWitness_zero d)
-
 /-- At depth one the certificate also has no rows, so any one-layer parameter tuple is a
 concrete witness. -/
 theorem texAnchorCertificate_hasConcreteWitness_one (d : Nat) :
@@ -1152,11 +1147,6 @@ theorem texAnchorCertificate_hasConcreteWitness_one (d : Nat) :
     · exact Fin.elim0 q.1
     · exact Fin.elim0 k
   simp [anchorCertificateValue]
-
-theorem texAnchorCertificate_auxPolynomial_ne_zero_one (d : Nat) :
-    texAnchorCertificate_auxPolynomial 1 d ≠ 0 :=
-  texAnchorCertificate_auxPolynomial_ne_zero_of_concreteWitness
-    (texAnchorCertificate_hasConcreteWitness_one d)
 
 /-! ### Concrete positive-depth witness bookkeeping -/
 
@@ -1315,46 +1305,6 @@ theorem texAnchorWitnessRowNat_injective {L : Nat} :
   · congr
     exact Fin.ext (by simpa [texAnchorWitnessRowGroup] using hgroup)
 
-theorem texAnchorWitness_gram_eq_one_of_basis_columns
-    {ι : Type*} [Fintype ι] [DecidableEq ι] {d : Nat}
-    (e : ι -> Fin d) (he : Function.Injective e) :
-    let G : Matrix (Fin d) ι ℝ :=
-      Matrix.of fun i row => (Pi.single (e row) (1 : ℝ) : Fin d -> ℝ) i
-    Matrix.transpose G * G = 1 := by
-  intro G
-  ext row row'
-  by_cases hrow : row = row'
-  · subst row'
-    have hentry : (Gᵀ * G) row row = 1 := by
-      calc
-        (Gᵀ * G) row row =
-            (Pi.single (e row) (1 : ℝ) : Fin d -> ℝ) ⬝ᵥ
-              (Pi.single (e row) (1 : ℝ) : Fin d -> ℝ) := by
-          simp [G, Matrix.mul_apply, dotProduct]
-        _ = 1 := by simp
-    simpa using hentry
-  · have he_ne : e row ≠ e row' := fun h => hrow (he h)
-    have hentry : (Gᵀ * G) row row' = 0 := by
-      calc
-        (Gᵀ * G) row row' =
-            (Pi.single (e row) (1 : ℝ) : Fin d -> ℝ) ⬝ᵥ
-              (Pi.single (e row') (1 : ℝ) : Fin d -> ℝ) := by
-          simp [G, Matrix.mul_apply, dotProduct]
-        _ = 0 := by
-          rw [single_dotProduct]
-          simp [he_ne]
-    simpa [hrow] using hentry
-
-theorem texAnchorWitness_gram_det_eq_one_of_basis_columns
-    {ι : Type*} [Fintype ι] [DecidableEq ι] {d : Nat}
-    (e : ι -> Fin d) (he : Function.Injective e) :
-    let G : Matrix (Fin d) ι ℝ :=
-      Matrix.of fun i row => (Pi.single (e row) (1 : ℝ) : Fin d -> ℝ) i
-    (Matrix.transpose G * G).det = 1 := by
-  intro G
-  rw [texAnchorWitness_gram_eq_one_of_basis_columns e he]
-  exact Matrix.det_one
-
 theorem texAnchorWitness_gram_eq_one_of_basis_columns'
     {ι : Type*} [Fintype ι] [DecidableEq ι] {d : Nat}
     {G : Matrix (Fin d) ι ℝ} {e : ι -> Fin d}
@@ -1393,15 +1343,6 @@ theorem texAnchorWitness_gram_det_eq_one_of_basis_columns'
     (Matrix.transpose G * G).det = 1 := by
   rw [texAnchorWitness_gram_eq_one_of_basis_columns' hG he]
   exact Matrix.det_one
-
-theorem texAnchorWitness_gram_det_ne_zero_of_basis_columns'
-    {ι : Type*} [Fintype ι] [DecidableEq ι] {d : Nat}
-    {G : Matrix (Fin d) ι ℝ} {e : ι -> Fin d}
-    (hG : ∀ i a, G i a = (Pi.single (e a) (1 : ℝ) : Fin d -> ℝ) i)
-    (he : Function.Injective e) :
-    (Matrix.transpose G * G).det ≠ 0 := by
-  rw [texAnchorWitness_gram_det_eq_one_of_basis_columns' hG he]
-  norm_num
 
 /-- The finite coordinate attached to a certificate row, using the row-count bound. -/
 def texAnchorWitnessRowFin {L d : Nat}
@@ -1643,23 +1584,6 @@ theorem texAnchorWitnessAttentionMatrix_image_t {L d j : Nat}
   simp [texAnchorWitnessAttentionMatrix, texAnchorWitnessAttentionRow,
     texAnchorWitnessRowBasis, Matrix.col_apply, hnotS, hj]
 
-/-- Prefix vector `e_0 + ... + e_k`, written with natural cutoffs so it is easy to use
-with zero-based layer indices. -/
-noncomputable def texAnchorWitnessPrefix (d k : Nat) : Fin d -> ℝ :=
-  fun i => if i.val ≤ k then 1 else 0
-
-/-- The nilpotent rank-one value matrix `e_{j+1} e_j^T` used in the explicit witness. -/
-noncomputable def texAnchorWitnessNil (d j : Nat) :
-    Matrix (Fin d) (Fin d) ℝ :=
-  if hj : j + 1 < d then
-    Matrix.single (⟨j + 1, hj⟩ : Fin d) (⟨j, by omega⟩ : Fin d) (1 : ℝ)
-  else 0
-
-/-- The value-step matrix `I + e_{j+1} e_j^T`. -/
-noncomputable def texAnchorWitnessB (d j : Nat) :
-    Matrix (Fin d) (Fin d) ℝ :=
-  skipB (texAnchorWitnessNil d j)
-
 /-- A determinant-one value-step matrix sending `e_j` to `e_{j+1}`.  It is the
 two-transvection block `[[0,-1],[1,1]]` on coordinates `(j,j+1)` and the identity
 elsewhere. -/
@@ -1686,10 +1610,6 @@ noncomputable def texAnchorWitnessShiftBOfLt (d j : Nat) (hj : j + 1 < d) :
     Matrix.transvection (texAnchorWitnessShiftDst j hj)
       (texAnchorWitnessShiftSrc j hj) (1 : ℝ)
 
-noncomputable def texAnchorWitnessShiftVOfLt (d j : Nat) (hj : j + 1 < d) :
-    Matrix (Fin d) (Fin d) ℝ :=
-  texAnchorWitnessShiftBOfLt d j hj - 1
-
 noncomputable def texAnchorWitnessShiftB (d j : Nat) :
     Matrix (Fin d) (Fin d) ℝ :=
   if hj : j + 1 < d then
@@ -1705,21 +1625,6 @@ theorem skipB_texAnchorWitnessShiftV (d j : Nat) :
     skipB (texAnchorWitnessShiftV d j) = texAnchorWitnessShiftB d j := by
   ext i k
   simp [skipB, texAnchorWitnessShiftV]
-
-theorem anchorStepMatrix_texAnchorWitnessShiftV_zero (d j : Nat) :
-    anchorStepMatrix
-        (fun n : Nat => (texAnchorWitnessShiftV d n, 0)) j 0 =
-      texAnchorWitnessShiftB d j := by
-  ext i k
-  simp [anchorStepMatrix, skipB_texAnchorWitnessShiftV]
-
-theorem anchorStepMatrix_texAnchorWitnessShiftV_one (d j : Nat) :
-    anchorStepMatrix
-        (fun n : Nat => (texAnchorWitnessShiftV d n, 0)) j 1 =
-      1 := by
-  rw [anchorStepMatrix, skipB_texAnchorWitnessShiftV]
-  ext i k
-  simp [texAnchorWitnessShiftV]
 
 theorem texAnchorWitnessShift_transvection_mulVec {d : Nat}
     (i j : Fin d) (c : ℝ) (v : Fin d -> ℝ) :
@@ -1745,11 +1650,6 @@ theorem texAnchorWitnessShiftBOfLt_det {d j : Nat} (hj : j + 1 < d) :
 theorem texAnchorWitnessShiftB_det {d j : Nat} (hj : j + 1 < d) :
     (texAnchorWitnessShiftB d j).det = 1 := by
   rw [texAnchorWitnessShiftB, dif_pos hj, texAnchorWitnessShiftBOfLt_det hj]
-
-theorem texAnchorWitnessShiftB_det_ne_zero {d j : Nat} (hj : j + 1 < d) :
-    (texAnchorWitnessShiftB d j).det ≠ 0 := by
-  rw [texAnchorWitnessShiftB_det hj]
-  norm_num
 
 theorem texAnchorWitnessShiftB_mulVec_current {d j : Nat} (hj : j + 1 < d) :
     texAnchorWitnessShiftB d j *ᵥ
@@ -1980,20 +1880,6 @@ theorem texAnchorWitness_anchorCertificateW_eq_current
         (1 : ℝ) :=
   texAnchorWitness_anchorCertificateW_eq_current_nat N d hd hrows k.val k.2
 
-theorem texAnchorWitness_step_det_product_eq_one
-    (N d : Nat) (hrows : genericCertificateRows N ≤ d) :
-    (∏ k : Fin (N - 1),
-      (anchorStepMatrix
-        (paramStream (texAnchorWitnessParams (N := N) (d := d) hrows))
-        k.val (texAnchorWitnessT N k)).det) = (1 : ℝ) := by
-  classical
-  refine Finset.prod_eq_one ?_
-  intro k _hk
-  rw [texAnchorWitness_anchorStepMatrix_T_eq_shiftB N d hrows k]
-  exact texAnchorWitnessShiftB_det
-    (d := d) (j := k.val)
-    (texAnchorWitnessT_source_lt_d (L := N) (d := d) hrows k.2)
-
 theorem texAnchorWitness_gram_det_eq_one_of_gradient_basis_columns
     {L d : Nat} (hrows : genericCertificateRows L ≤ d)
     {θ : Params L d} {t s : AnchorGateVector L} {w0 : Fin d -> ℝ}
@@ -2086,15 +1972,6 @@ theorem texAnchorWitness_anchorCertificateValue_ne_zero_of_assembly
   rw [anchorCertificateValue]
   exact mul_ne_zero (mul_ne_zero hgram hstepProd) hnormProd
 
-theorem texAnchorWitness_transvection_mulVec_single_of_ne_source {d : Nat}
-    (i source r : Fin d) (c : ℝ) (hr : r ≠ source) :
-    Matrix.transvection i source c *ᵥ Pi.single r (1 : ℝ) =
-      Pi.single r (1 : ℝ) := by
-  rw [texAnchorWitnessShift_transvection_mulVec]
-  have hzero : (Pi.single r (1 : ℝ) : Fin d -> ℝ) source = 0 := by
-    simp [hr.symm]
-  simp [hzero]
-
 theorem texAnchorWitness_transvection_transpose_mulVec_single_of_ne_target {d : Nat}
     (target source r : Fin d) (c : ℝ) (hr : r ≠ target) :
     (Matrix.transvection target source c)ᵀ *ᵥ Pi.single r (1 : ℝ) =
@@ -2111,37 +1988,6 @@ theorem texAnchorWitness_transvection_transpose_mulVec_single_of_ne_target {d : 
   · subst a
     simp [Matrix.transvection, hsingle]
   · simp [Matrix.transvection, hsingle, har]
-
-theorem texAnchorWitnessShiftB_mulVec_other {d j : Nat} (r : Fin d)
-    (hrj : r.val ≠ j) (hrj1 : r.val ≠ j + 1) :
-    texAnchorWitnessShiftB d j *ᵥ Pi.single r (1 : ℝ) =
-      Pi.single r (1 : ℝ) := by
-  classical
-  by_cases hj : j + 1 < d
-  · let src := texAnchorWitnessShiftSrc j hj
-    let dst := texAnchorWitnessShiftDst j hj
-    have hrsrc : r ≠ src := by
-      intro h
-      exact hrj (by simpa [src, texAnchorWitnessShiftSrc] using congrArg Fin.val h)
-    have hrdst : r ≠ dst := by
-      intro h
-      exact hrj1 (by simpa [dst, texAnchorWitnessShiftDst] using congrArg Fin.val h)
-    have hright :
-        Matrix.transvection dst src (1 : ℝ) *ᵥ Pi.single r (1 : ℝ) =
-          Pi.single r (1 : ℝ) :=
-      texAnchorWitness_transvection_mulVec_single_of_ne_source dst src r (1 : ℝ) hrsrc
-    have hleft :
-        Matrix.transvection src dst (-1 : ℝ) *ᵥ Pi.single r (1 : ℝ) =
-          Pi.single r (1 : ℝ) :=
-      texAnchorWitness_transvection_mulVec_single_of_ne_source src dst r (-1 : ℝ) hrdst
-    have hchain :
-        Matrix.transvection src dst (-1 : ℝ) *ᵥ
-            (Matrix.transvection dst src (1 : ℝ) *ᵥ Pi.single r (1 : ℝ)) =
-          Pi.single r (1 : ℝ) := by
-      rw [hright, hleft]
-    simpa [texAnchorWitnessShiftB, hj, texAnchorWitnessShiftBOfLt, src, dst,
-      Matrix.mulVec_mulVec] using hchain
-  · rw [texAnchorWitnessShiftB, dif_neg hj, Matrix.one_mulVec]
 
 theorem texAnchorWitnessShiftB_transpose_mulVec_other {d j : Nat} (r : Fin d)
     (hrj : r.val ≠ j) (hrj1 : r.val ≠ j + 1) :
@@ -2226,16 +2072,6 @@ theorem texAnchorWitnessERowFin_val_gt_group {L d j : Nat}
         (texAnchorWitnessERowOfLt (L := L) hj)).val := by
   change j < texAnchorWitnessRowNat (texAnchorWitnessERowOfLt (L := L) hj)
   rw [texAnchorWitnessRowNat_eRowOfLt]
-  have hstart := texAnchorWitnessBlockStart_gt_self hjpos
-  omega
-
-theorem texAnchorWitnessTRowFin_val_gt_group {L d j : Nat}
-    (hrows : genericCertificateRows L ≤ d) (hj : j < L - 1) (hjpos : 0 < j) :
-    j <
-      (texAnchorWitnessRowFin (L := L) (d := d) hrows
-        (texAnchorWitnessTRowOfLt (L := L) hj)).val := by
-  change j < texAnchorWitnessRowNat (texAnchorWitnessTRowOfLt (L := L) hj)
-  rw [texAnchorWitnessRowNat_tRowOfLt]
   have hstart := texAnchorWitnessBlockStart_gt_self hjpos
   omega
 
@@ -2525,7 +2361,6 @@ theorem texAnchorWitness_value_ne_zero_succ_succ
       texAnchorWitnessShiftSrc] using
       texAnchorWitnessAttentionMatrix_image_e (L := N) (d := d)
         hrows hkN k.2
-
 
 /-- Remaining TeX witness construction for positive certificate depth.  This is the
 formal version of the rank-one nilpotent value matrices, block attention maps,

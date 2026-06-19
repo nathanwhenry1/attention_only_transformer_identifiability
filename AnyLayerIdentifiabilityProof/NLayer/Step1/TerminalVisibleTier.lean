@@ -82,17 +82,6 @@ noncomputable def step1TerminalVisibleTailPoly {d : Nat} (L : Nat)
   else
     step1FormalPhiPropagationTailPoly θ w v m
 
-/-- Off the two special levels, the terminal-visible polynomial is the formal-phi
-propagation polynomial. -/
-theorem step1TerminalVisibleTailPoly_eq_formalPhi {d : Nat} (L : Nat)
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w v : Fin d → ℝ) (iota : Fin d) {m : Nat}
-    (hvis : m + 2 ≠ L) (hconst : m + 1 ≠ L) :
-    step1TerminalVisibleTailPoly L θ w v iota m =
-      step1FormalPhiPropagationTailPoly θ w v m := by
-  unfold step1TerminalVisibleTailPoly
-  rw [if_neg hvis, if_neg hconst]
-
 /-- At the visible level `m = L - 2`, the terminal-visible polynomial is the formal-phi
 propagation polynomial times the visible factor. -/
 theorem step1TerminalVisibleTailPoly_eq_visible {d : Nat} (L : Nat)
@@ -104,15 +93,6 @@ theorem step1TerminalVisibleTailPoly_eq_visible {d : Nat} (L : Nat)
         step1VisiblePoly (K := m + 1) θ w iota := by
   unfold step1TerminalVisibleTailPoly
   rw [if_pos hvis]
-
-/-- At the constant level `m = L - 1`, the terminal-visible polynomial is `1`. -/
-theorem step1TerminalVisibleTailPoly_eq_one {d : Nat} (L : Nat)
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w v : Fin d → ℝ) (iota : Fin d) {m : Nat}
-    (hvis : m + 2 ≠ L) (hconst : m + 1 = L) :
-    step1TerminalVisibleTailPoly L θ w v iota m = 1 := by
-  unfold step1TerminalVisibleTailPoly
-  rw [if_neg hvis, if_pos hconst]
 
 /-- Polynomial-backed nested data for the terminal-visible tower. -/
 noncomputable def step1TerminalVisibleNestedTailData {d : Nat} (L : Nat)
@@ -161,25 +141,6 @@ theorem eval_step1VisiblePoly_ne_zero_of_terminalVisibleZeroFreeRegion_succ {d :
     step1TerminalVisibleTailPoly_eq_visible L θ w v iota hm,
     MvPolynomial.eval_mul] at hprod_eval
   exact (mul_ne_zero_iff.mp hprod_eval).2
-
-/-- The formal-phi propagation factor is also nonzero on the terminal tower's zero-free
-region at the visible level. -/
-theorem eval_step1FormalPhiPropagationTailPoly_ne_zero_of_terminalVisibleZeroFreeRegion_succ
-    {d : Nat} {L : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w v : Fin d → ℝ} {iota : Fin d} {m : Nat} (hm : m + 2 = L)
-    {z : Fin (m + 1) → ℂ}
-    (hz : z ∈ (step1TerminalVisibleNestedTailData L θ w v iota).zeroFreeRegion (m + 1)) :
-    MvPolynomial.eval z (step1FormalPhiPropagationTailPoly θ w v m) ≠ 0 := by
-  have hprod_eval :
-      MvPolynomial.eval z
-        ((step1TerminalVisibleNestedTailData L θ w v iota).tailData m).poly ≠ 0 :=
-    (step1TerminalVisibleNestedTailData L θ w v iota).zeroFreeRegion_eval_ne_zero_of_mem_succ
-      (m := m) hz
-  rw [step1TerminalVisibleNestedTailData_poly,
-    step1TerminalVisibleTailPoly_eq_visible L θ w v iota hm,
-    MvPolynomial.eval_mul] at hprod_eval
-  exact (mul_ne_zero_iff.mp hprod_eval).1
 
 /-! ## Leading-coefficient factorization at the visible level
 

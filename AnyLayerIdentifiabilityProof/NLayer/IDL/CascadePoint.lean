@@ -153,38 +153,4 @@ theorem gateLimits_of_slopeSigns {d : Nat} (r : Nat) :
       rw [paramStream_tail_eq_shift θ]
       exact h
 
-/-- **The unprimed dial cascade (`Λ ≠ 0` branch).**  A free first gate (the dial limit `t`)
-followed by a mixed-sign tail cascade: levels `≥ 1` saturate to `1[Λ>0]`, the genuine
-trichotomy constants on the `Λ ≠ 0` side.  Produces `GateLimits` with `ς 0 = t` and
-`ς n = if 0 < Λ_n then 1 else 0` for `n ≥ 1`. -/
-theorem gateLimits_dialHead_of_slopeSigns {m d : Nat} (r : Nat) (θ : Params (m + 1) d)
-    (P : ℝ → ProbePoint d) (pt : ProbePoint d) (t : ℝ) (ς : Nat -> ℝ)
-    (hς0 : ς 0 = t)
-    (hP : Tendsto P atTop (𝓝 pt))
-    (hgate0 :
-      Tendsto (fun τ => firstLayerGate r (Params.headAttention θ) (P τ).1 (P τ).2 τ)
-        atTop (𝓝 t))
-    (hsign :
-      ∀ n : Nat, 1 ≤ n → n < m + 1 →
-        matrixBilin (paramStream θ n).2
-            (peelPoint (paramStream θ) ς n pt).1
-            (peelPoint (paramStream θ) ς n pt).2 ≠ 0 ∧
-          ς n =
-            if 0 < matrixBilin (paramStream θ n).2
-                (peelPoint (paramStream θ) ς n pt).1
-                (peelPoint (paramStream θ) ς n pt).2 then 1 else 0) :
-    GateLimits r θ P ς pt := by
-  refine ⟨by rw [hς0]; exact hgate0, ?_⟩
-  have heff :
-      Tendsto (effectivePath r θ P) atTop
-        (𝓝 (effLimitPoint (Params.headValue θ) (ς 0) pt)) :=
-    tendsto_effectivePath r θ P (ς 0) pt hP (by rw [hς0]; exact hgate0)
-  refine gateLimits_of_slopeSigns r (Params.tail θ) (effectivePath r θ P)
-    (effLimitPoint (Params.headValue θ) (ς 0) pt) (fun k => ς (k + 1)) heff ?_
-  intro n hn
-  have h := hsign (n + 1) (Nat.succ_le_succ (Nat.zero_le n)) (Nat.succ_lt_succ hn)
-  rw [peelPoint_paramStream_succ θ ς n pt, paramStream_tail_eq_shift θ] at h
-  rw [paramStream_tail_eq_shift θ]
-  exact h
-
 end TransformerIdentifiability.NLayer

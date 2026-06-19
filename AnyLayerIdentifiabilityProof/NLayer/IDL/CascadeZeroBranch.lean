@@ -266,56 +266,6 @@ theorem vecC_matC_bilin {d : Nat} (A : Matrix (Fin d) (Fin d) ℝ) (w v : Fin d 
 
 /-! ## Real scalar extraction from `matC` identities -/
 
-/-- A `matC` identity against a complex scalar multiple of a nonzero real matrix carries
-both the real matrix identity and the fact that the scalar is real.
-
-This is the reusable scalar-extraction step needed after head-peeling turns a
-`formalX = γ • matC A` identity into `matC M = γ • matC A`. -/
-theorem matC_eq_complex_smul_matC_realPart_and_scalar {d : Nat}
-    {M A : Matrix (Fin d) (Fin d) ℝ} {g : ℂ}
-    (hA : A ≠ 0) (h : matC M = g • matC A) :
-    M = g.re • A ∧ (g.re : ℂ) = g := by
-  constructor
-  · ext i j
-    have hij := congrFun (congrFun h i) j
-    simpa [matC, Matrix.smul_apply, smul_eq_mul] using congrArg Complex.re hij
-  · rcases exists_matrix_entry_ne_zero_of_ne_zero hA with ⟨i, j, hij_ne⟩
-    have hij := congrFun (congrFun h i) j
-    have him : g.im = 0 ∨ A i j = 0 := by
-      simpa [matC, Matrix.smul_apply, smul_eq_mul] using congrArg Complex.im hij
-    have hgim : g.im = 0 := by
-      rcases him with hg | hAij
-      · exact hg
-      · exact False.elim (hij_ne hAij)
-    apply Complex.ext
-    · simp
-    · simp [hgim]
-
-/-- Concrete affine normal form for the scalar supplied by `CascadeCurveRigidityData`,
-using its values at `0` and `1` as coefficients. -/
-theorem CascadeCurveRigidityData.gamma_eq_eval_zero_add_eval_slope {L d : Nat}
-    {θ : Params L d} {A : Matrix (Fin d) (Fin d) ℝ} {level : Nat} {tail : Nat → ℝ}
-    (D : CascadeCurveRigidityData θ A level tail) (z : ℂ) :
-    D.gamma z = D.gamma 0 + (D.gamma 1 - D.gamma 0) * z := by
-  rcases D.gamma_affine with ⟨gamma0, gamma1, hgamma⟩
-  have h0 : D.gamma 0 = gamma0 := by simpa using hgamma 0
-  have h1 : D.gamma 1 = gamma0 + gamma1 := by simpa using hgamma 1
-  calc
-    D.gamma z = gamma0 + gamma1 * z := hgamma z
-    _ = D.gamma 0 + (D.gamma 1 - D.gamma 0) * z := by
-      rw [h0, h1]
-      ring
-
-/-- If the affine scalar from curve rigidity vanishes at `0` and `1`, it vanishes
-identically. -/
-theorem CascadeCurveRigidityData.gamma_eq_zero_of_eval_zero_one {L d : Nat}
-    {θ : Params L d} {A : Matrix (Fin d) (Fin d) ℝ} {level : Nat} {tail : Nat → ℝ}
-    (D : CascadeCurveRigidityData θ A level tail)
-    (h0 : D.gamma 0 = 0) (h1 : D.gamma 1 = 0) (z : ℂ) :
-    D.gamma z = 0 := by
-  rw [D.gamma_eq_eval_zero_add_eval_slope z, h0, h1]
-  simp
-
 /-- Reading off a single matrix entry from the bilinear form on coordinate indicators. -/
 theorem single_mulVec_single {d : Nat} (Y : Matrix (Fin d) (Fin d) ℂ) (i j : Fin d) :
     Pi.single i (1 : ℂ) ⬝ᵥ (Y *ᵥ Pi.single j 1) = Y i j := by
@@ -386,34 +336,5 @@ theorem cascadeCurveRigidity_formalX_formalY {L d : Nat} {θ : Params L d}
   rw [specializedPhi, formalPhi_eq_affine] at hcurve
   rw [vecC_matC_bilin]
   exact hcurve
-
-/-- Once a real-gate head-peel has identified `formalX` with `matC M`, the curve-rigidity
-identity forces the corresponding `γ(t)` to be real and extracts the real scalar
-identity `M = γ(t).re • A`. -/
-theorem cascadeCurveRigidity_formalX_matC_realPart_and_scalar {L d : Nat}
-    {θ : Params L d} {A M : Matrix (Fin d) (Fin d) ℝ} {level : Nat} {tail : Nat → ℝ}
-    (D : CascadeCurveRigidityData θ A level tail) (t : ℝ)
-    (hM :
-      formalX (paramStream θ) level (gateAssignmentOfTail t tail) = matC M)
-    (hA : A ≠ 0) :
-    M = (D.gamma (t : ℂ)).re • A ∧ ((D.gamma (t : ℂ)).re : ℂ) = D.gamma (t : ℂ) := by
-  have hformal :
-      formalX (paramStream θ) level (gateAssignmentOfTail t tail) =
-        D.gamma (t : ℂ) • matC A := by
-    simpa [gateAssignmentOfTail] using
-      (cascadeCurveRigidity_formalX_formalY (D := D) (z := (t : ℂ))).1
-  exact matC_eq_complex_smul_matC_realPart_and_scalar hA (hM ▸ hformal)
-
-/-- Package the `formalX`/`formalY` identities extracted from `CascadeCurveRigidityData`
-as a `CascadeCurveRigidityProvider` on any infinite real slice. -/
-noncomputable def cascadeCurveRigidityProvider_of_data_on_infinite {L d : Nat}
-    {θ : Params L d} {A : Matrix (Fin d) (Fin d) ℝ} {level : Nat} {tail : Nat → ℝ}
-    (D : CascadeCurveRigidityData θ A level tail)
-    (slice : Set ℝ) (hslice : slice.Infinite) :
-    CascadeCurveRigidityProvider θ A level tail :=
-  cascadeCurveRigidityProvider_of_data_formalXY_on_infinite D slice hslice
-    (fun t _ht => by
-      simpa [gateAssignmentOfTail] using
-        cascadeCurveRigidity_formalX_formalY (D := D) (z := (t : ℂ)))
 
 end TransformerIdentifiability.NLayer

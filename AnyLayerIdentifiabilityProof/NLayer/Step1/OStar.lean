@@ -412,12 +412,6 @@ theorem kappaMatrix_transpose {d : Nat} (θ : LayerStream d) (n : Nat) :
     (kappaMatrix θ n)ᵀ = kappaMatrix θ n :=
   symPart_transpose _
 
-theorem firstSlope_isProbePolynomial {L d : Nat} (θ : Params L d) :
-    IsProbePolynomial d (fun p : ProbePair d => firstSlope θ p.1 p.2) :=
-  ⟨matrixBilinProbePoly (firstAttention θ), by
-    intro p
-    simpa [firstSlope] using eval_matrixBilinProbePoly (firstAttention θ) p⟩
-
 theorem firstSlope_isNonzeroProbePolynomial_of_firstAttention_ne_zero {L d : Nat}
     {θ : Params L d} (hA : firstAttention θ ≠ 0) :
     IsNonzeroProbePolynomial d (fun p : ProbePair d => firstSlope θ p.1 p.2) :=
@@ -426,13 +420,6 @@ theorem firstSlope_isNonzeroProbePolynomial_of_firstAttention_ne_zero {L d : Nat
     by
       intro p
       simpa [firstSlope] using eval_matrixBilinProbePoly (firstAttention θ) p⟩
-
-theorem kappaParam_isProbePolynomial {L d : Nat} (θ : Params L d) (j : Nat) :
-    IsProbePolynomial d (fun p : ProbePair d => kappaParam_j θ j p.1) :=
-  ⟨matrixQuadProbePoly (kappaMatrix (paramStream θ) (j - 2)), by
-    intro p
-    simpa [kappaParam_j, kappa_j, kappaIndex] using
-      eval_matrixQuadProbePoly (kappaMatrix (paramStream θ) (j - 2)) p⟩
 
 theorem kappaParam_isNonzeroProbePolynomial_of_kappaMatrix_ne_zero {L d : Nat}
     {θ : Params L d} {j : Nat}
@@ -494,15 +481,6 @@ noncomputable def O_star {L d : Nat} (θ' : Params L d) (O : Set (ProbePair d)) 
     ∧ firstSlope θ' p.1 p.2 ≠ 0
     ∧ (∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0)
     ∧ visibleTailVector θ' p.1 ≠ 0}
-
-theorem mem_O_star_iff {L d : Nat} {θ' : Params L d} {O : Set (ProbePair d)}
-    {p : ProbePair d} :
-    p ∈ O_star θ' O ↔
-      p ∈ O
-        ∧ firstSlope θ' p.1 p.2 ≠ 0
-        ∧ (∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0)
-        ∧ visibleTailVector θ' p.1 ≠ 0 := by
-  rfl
 
 theorem O_star_mem_base {L d : Nat} {θ' : Params L d} {O : Set (ProbePair d)}
     {p : ProbePair d} (hp : p ∈ O_star θ' O) :
@@ -653,32 +631,6 @@ theorem dense_firstSlope_kappa_ne_of_nonzero_probe_polynomials {L d : Nat}
     (dense_kappa_ne_of_nonzero_probe_polynomials hKappa)
     (isOpen_kappa_ne_of_nonzero_probe_polynomials hKappa)
 
-/-- Relative density in `O` of the first-slope and finite-kappa nonvanishing intersection. -/
-theorem dense_firstSlope_kappa_ne_in_O_of_open_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)} (hOpenO : IsOpen O)
-    (hFirst :
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => firstSlope θ' p.1 p.2))
-    (hKappa : ∀ j : Nat, 2 ≤ j -> j ≤ L ->
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => kappaParam_j θ' j p.1)) :
-    Dense {p : O | firstSlope θ' p.1.1 p.1.2 ≠ 0
-      ∧ ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1.1 ≠ 0} := by
-  have hdense : Dense (((↑) : O -> ProbePair d) ⁻¹'
-      ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0})) :=
-    (dense_firstSlope_kappa_ne_of_nonzero_probe_polynomials hFirst hKappa).preimage
-      hOpenO.isOpenMap_subtype_val
-  have hset :
-      (((↑) : O -> ProbePair d) ⁻¹'
-        ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-          {p : ProbePair d |
-            ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0}))
-        =
-      {p : O | firstSlope θ' p.1.1 p.1.2 ≠ 0
-        ∧ ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1.1 ≠ 0} := by
-    rfl
-  simpa [hset] using hdense
-
 /-- Assumption package for the Zariski/generic part of Step 0.  The hard facts are kept
 as explicit hypotheses here: each defining scalar condition has a nonzero polynomial
 witness, visible coordinates have polynomial witnesses with at least one nonzero
@@ -700,30 +652,11 @@ structure OStarGenericAssumptions (L d : Nat) (θ' : Params L d)
       IsNonzeroProbePolynomial d (fun p : ProbePair d => visibleTailCoord θ' p.1 i)
   nonempty_O_star : (O_star θ' O).Nonempty
 
-theorem OStarGenericAssumptions.firstSlope_isPolynomial {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    IsProbePolynomial d (fun p : ProbePair d => firstSlope θ' p.1 p.2) :=
-  h.firstSlope_polynomial.isPolynomial
-
-theorem OStarGenericAssumptions.kappa_isPolynomial {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) {j : Nat}
-    (hj2 : 2 ≤ j) (hjL : j ≤ L) :
-    IsProbePolynomial d (fun p : ProbePair d => kappaParam_j θ' j p.1) :=
-  (h.kappa_polynomial j hj2 hjL).isPolynomial
-
 theorem OStarGenericAssumptions.isOpen_firstSlope_ne {L d : Nat}
     {θ' : Params L d} {O : Set (ProbePair d)}
     (h : OStarGenericAssumptions L d θ' O) :
     IsOpen {p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} :=
   h.firstSlope_polynomial.isOpen_ne_zero
-
-theorem OStarGenericAssumptions.dense_firstSlope_ne {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense {p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} :=
-  h.firstSlope_polynomial.dense_ne_zero
 
 theorem OStarGenericAssumptions.isOpen_kappa_ne {L d : Nat}
     {θ' : Params L d} {O : Set (ProbePair d)}
@@ -753,30 +686,6 @@ theorem OStarGenericAssumptions.isOpen_kappa_ne {L d : Nat}
       exact (Set.mem_iInter.mp (Set.mem_iInter.mp hp j) hj)
   simpa [hset] using hfin
 
-theorem OStarGenericAssumptions.dense_kappa_ne {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense {p : ProbePair d |
-      ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0} :=
-  dense_kappa_ne_of_nonzero_probe_polynomials h.kappa_polynomial
-
-theorem OStarGenericAssumptions.dense_firstSlope_kappa_ne {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-      {p : ProbePair d |
-        ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0}) :=
-  dense_firstSlope_kappa_ne_of_nonzero_probe_polynomials h.firstSlope_polynomial
-    h.kappa_polynomial
-
-theorem OStarGenericAssumptions.dense_firstSlope_kappa_ne_in_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense {p : O | firstSlope θ' p.1.1 p.1.2 ≠ 0
-      ∧ ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1.1 ≠ 0} :=
-  dense_firstSlope_kappa_ne_in_O_of_open_O h.isOpen_O h.firstSlope_polynomial
-    h.kappa_polynomial
-
 theorem visibleTailVector_ne_iff_exists_coord_ne {L d : Nat}
     {θ : Params L d} {w : Fin d -> ℝ} :
     visibleTailVector θ w ≠ 0 ↔
@@ -803,24 +712,6 @@ theorem dense_visibleTailVector_ne_of_visibleCoord_nonzero {L d : Nat}
   intro p hp
   exact visibleTailVector_ne_iff_exists_coord_ne.mpr ⟨i, hp⟩
 
-/-- Relative density in `O` of visible-tail nonvanishing. -/
-theorem dense_visibleTailVector_ne_in_O_of_open_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)} (hOpenO : IsOpen O)
-    (hVisible : ∃ i : Fin d,
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => visibleTailCoord θ' p.1 i)) :
-    Dense {p : O | visibleTailVector θ' p.1.1 ≠ 0} := by
-  have hdense : Dense (((↑) : O -> ProbePair d) ⁻¹'
-      {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0}) :=
-    (dense_visibleTailVector_ne_of_visibleCoord_nonzero hVisible).preimage
-      hOpenO.isOpenMap_subtype_val
-  have hset :
-      (((↑) : O -> ProbePair d) ⁻¹'
-        {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0})
-        =
-      {p : O | visibleTailVector θ' p.1.1 ≠ 0} := by
-    rfl
-  simpa [hset] using hdense
-
 theorem OStarGenericAssumptions.isOpen_visibleTailVector_ne {L d : Nat}
     {θ' : Params L d} {O : Set (ProbePair d)}
     (h : OStarGenericAssumptions L d θ' O) :
@@ -835,18 +726,6 @@ theorem OStarGenericAssumptions.isOpen_visibleTailVector_ne {L d : Nat}
     ext p
     simp [visibleTailVector_ne_iff_exists_coord_ne]
   simpa [hset] using hopen
-
-theorem OStarGenericAssumptions.dense_visibleTailVector_ne {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0} :=
-  dense_visibleTailVector_ne_of_visibleCoord_nonzero h.visibleCoord_nonzero
-
-theorem OStarGenericAssumptions.dense_visibleTailVector_ne_in_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense {p : O | visibleTailVector θ' p.1.1 ≠ 0} :=
-  dense_visibleTailVector_ne_in_O_of_open_O h.isOpen_O h.visibleCoord_nonzero
 
 theorem OStarGenericAssumptions.isOpen_O_star {L d : Nat}
     {θ' : Params L d} {O : Set (ProbePair d)}
@@ -927,61 +806,6 @@ theorem dense_O_star_in_O_of_open_O {L d : Nat} {θ' : Params L d}
       exact ⟨⟨hp.2.1, hp.2.2.1⟩, hp.2.2.2⟩
   simpa [hset] using hpre
 
-/-- Ambient density of `O_star` under the exact additional assumption that the base
-set `O` is dense. -/
-theorem dense_O_star_of_dense_O {L d : Nat} {θ' : Params L d}
-    {O : Set (ProbePair d)} (hOpenO : IsOpen O) (hDenseO : Dense O)
-    (hFirst :
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => firstSlope θ' p.1 p.2))
-    (hKappa : ∀ j : Nat, 2 ≤ j -> j ≤ L ->
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => kappaParam_j θ' j p.1))
-    (hVisible : ∃ i : Fin d,
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => visibleTailCoord θ' p.1 i)) :
-    Dense (O_star θ' O) := by
-  have hfk_dense :
-      Dense ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0}) :=
-    dense_firstSlope_kappa_ne_of_nonzero_probe_polynomials hFirst hKappa
-  have hfk_open :
-      IsOpen ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0}) :=
-    hFirst.isOpen_ne_zero.inter (isOpen_kappa_ne_of_nonzero_probe_polynomials hKappa)
-  have hvisible_dense :
-      Dense {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0} :=
-    dense_visibleTailVector_ne_of_visibleCoord_nonzero hVisible
-  have hbase_dense :
-      Dense (O ∩ ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0})) :=
-    hDenseO.inter_of_isOpen_right hfk_dense hfk_open
-  have hbase_open :
-      IsOpen (O ∩ ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0})) :=
-    hOpenO.inter hfk_open
-  have hmain :
-      Dense ((O ∩ ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0})) ∩
-        {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0}) :=
-    hbase_dense.inter_of_isOpen_left hvisible_dense hbase_open
-  have hset :
-      ((O ∩ ({p : ProbePair d | firstSlope θ' p.1 p.2 ≠ 0} ∩
-        {p : ProbePair d |
-          ∀ j : Nat, 2 ≤ j -> j ≤ L -> kappaParam_j θ' j p.1 ≠ 0})) ∩
-        {p : ProbePair d | visibleTailVector θ' p.1 ≠ 0})
-        =
-      O_star θ' O := by
-    ext p
-    constructor
-    · rintro ⟨⟨hO, ⟨hfirst, hkappa⟩⟩, hvisible⟩
-      exact ⟨hO, hfirst, hkappa, hvisible⟩
-    · intro hp
-      exact ⟨⟨hp.1, ⟨hp.2.1, hp.2.2.1⟩⟩, hp.2.2.2⟩
-  simpa [hset] using hmain
-
 /-- Nonemptiness of `O_star` from an open nonempty base set and the concrete nonzero
 polynomial witnesses for the first-slope, kappa, and visible-tail conditions. -/
 theorem O_star_nonempty_of_open_nonempty_nonzero_probe_polynomials {L d : Nat}
@@ -1023,15 +847,6 @@ structure OStarConcreteGenericData (L d : Nat) (θ' : Params L d)
 namespace OStarConcreteGenericData
 
 variable {L d : Nat} {θ' : Params L d} {O : Set (ProbePair d)}
-
-theorem firstSlope_isPolynomial (D : OStarConcreteGenericData L d θ' O) :
-    IsProbePolynomial d (fun p : ProbePair d => firstSlope θ' p.1 p.2) :=
-  (OStarConcreteGenericData.firstSlope_nonzero D).isPolynomial
-
-theorem kappa_isPolynomial (D : OStarConcreteGenericData L d θ' O)
-    {j : Nat} (hj2 : 2 ≤ j) (hjL : j ≤ L) :
-    IsProbePolynomial d (fun p : ProbePair d => kappaParam_j θ' j p.1) :=
-  (OStarConcreteGenericData.kappa_nonzero D j hj2 hjL).isPolynomial
 
 theorem nonempty_O_star (D : OStarConcreteGenericData L d θ' O) :
     (O_star θ' O).Nonempty :=
@@ -1077,25 +892,6 @@ def ofMatrixNonzero
 
 end OStarConcreteGenericData
 
-/-- Direct constructor for `OStarGenericAssumptions` from concrete nonzero polynomial
-witnesses and visible-coordinate polynomial witnesses. -/
-def OStarGenericAssumptions.ofNonzeroProbePolynomials {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (hOpenO : IsOpen O) (hNonemptyO : O.Nonempty)
-    (hFirst :
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => firstSlope θ' p.1 p.2))
-    (hKappa : ∀ j : Nat, 2 ≤ j -> j ≤ L ->
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => kappaParam_j θ' j p.1))
-    (hVisiblePoly :
-      ∀ i : Fin d,
-        IsProbePolynomial d (fun p : ProbePair d => visibleTailCoord θ' p.1 i))
-    (hVisibleNonzero : ∃ i : Fin d,
-      IsNonzeroProbePolynomial d (fun p : ProbePair d => visibleTailCoord θ' p.1 i)) :
-    OStarGenericAssumptions L d θ' O :=
-  OStarConcreteGenericData.toOStarGenericAssumptions
-    (OStarConcreteGenericData.mk hOpenO hNonemptyO hFirst hKappa hVisiblePoly
-      hVisibleNonzero)
-
 /-- Direct constructor for `OStarGenericAssumptions` from matrix-level nonzero facts. -/
 def OStarGenericAssumptions.ofMatrixNonzero {L d : Nat}
     {θ' : Params L d} {O : Set (ProbePair d)}
@@ -1108,29 +904,10 @@ def OStarGenericAssumptions.ofMatrixNonzero {L d : Nat}
   (OStarConcreteGenericData.ofMatrixNonzero (L := L) (d := d) (θ' := θ') (O := O)
     hOpenO hNonemptyO hFirst hKappa hVisible).toOStarGenericAssumptions
 
-theorem OStarGenericAssumptions.dense_O_star_in_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) :
-    Dense (((↑) : O -> ProbePair d) ⁻¹' O_star θ' O) :=
-  dense_O_star_in_O_of_open_O h.isOpen_O h.firstSlope_polynomial h.kappa_polynomial
-    h.visibleCoord_nonzero
-
-theorem OStarGenericAssumptions.dense_O_star_of_dense_O {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)}
-    (h : OStarGenericAssumptions L d θ' O) (hDenseO : Dense O) :
-    Dense (O_star θ' O) :=
-  TransformerIdentifiability.NLayer.dense_O_star_of_dense_O h.isOpen_O hDenseO
-    h.firstSlope_polynomial h.kappa_polynomial h.visibleCoord_nonzero
-
 theorem O_star_nonempty_of_generic {L d : Nat} {θ' : Params L d}
     {O : Set (ProbePair d)} (h : OStarGenericAssumptions L d θ' O) :
     (O_star θ' O).Nonempty :=
   h.nonempty_O_star
-
-theorem O_star_isOpen_of_generic {L d : Nat} {θ' : Params L d}
-    {O : Set (ProbePair d)} (h : OStarGenericAssumptions L d θ' O) :
-    IsOpen (O_star θ' O) :=
-  h.isOpen_O_star
 
 theorem exists_visibleTailCoord_ne_zero_of_visibleTailVector_ne_zero {L d : Nat}
     {θ : Params L d} {w : Fin d -> ℝ}
@@ -1196,14 +973,6 @@ theorem LocalProbeTailAgreement.at {r L d : Nat} {O : Set (ProbePair d)}
     RealTailObservableAgreementAt r θ θ' p (h.T0 p) :=
   h.eqOnTail p hp
 
-/-- A global tail-agreement hypothesis restricts to any local probe region. -/
-def ConstantProbeTailAgreement.toLocal {r L d : Nat} {O : Set (ProbePair d)}
-    {θ θ' : Params L d}
-    (h : ConstantProbeTailAgreement r L d θ θ') :
-    LocalProbeTailAgreement r L d O θ θ' where
-  T0 := fun _ => h.T0
-  eqOnTail := fun p _hp => h.at p
-
 /-- Step 0 data after fixing one probe in `O_star`: the probe, visible coordinate, and
 the real tail interval on which the two observables agree. -/
 structure FixedOStarProbe (r L d : Nat) (O : Set (ProbePair d))
@@ -1229,13 +998,6 @@ noncomputable def FixedOStarProbe.ofLocalAgreement {r L d : Nat}
       visible_iota_ne := c.nonzero
       T0 := hAgree.T0 p
       tail_agreement := hAgree.at hp.1 }
-
-noncomputable def FixedOStarProbe.ofGlobalAgreement {r L d : Nat}
-    {O : Set (ProbePair d)} {θ θ' : Params L d}
-    (hAgree : ConstantProbeTailAgreement r L d θ θ') {p : ProbePair d}
-    (hp : p ∈ O_star θ' O) :
-    FixedOStarProbe r L d O θ θ' :=
-  FixedOStarProbe.ofLocalAgreement hAgree.toLocal hp
 
 /-- Standing assumptions for the concrete Step 1 theorem interface. -/
 structure Step1StandingAssumptions (r L d : Nat) (O : Set (ProbePair d))

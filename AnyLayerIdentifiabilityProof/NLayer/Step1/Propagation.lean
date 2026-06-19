@@ -211,17 +211,6 @@ theorem tierLeadingCoeffPath_tendsto_of_continuousAt {m : Nat} (A : TierSystem m
   simpa [tierLeadingCoeffPath, Function.comp_def] using
     (hlead.comp hprefix).tendsto.mono_left nhdsWithin_le_nhds
 
-/-- Gatewise continuity version of `tierLeadingCoeffPath_tendsto_of_continuousAt`. -/
-theorem tierLeadingCoeffPath_tendsto_of_gate_continuousAt {m : Nat} (A : TierSystem m)
-    {j : Nat} {τ : ℂ}
-    (hs : ∀ i : Fin j, ContinuousAt (A.stratification.s i) τ)
-    (hlead : ContinuousAt (A.nestedFamily.step j).lead
-      (gatePrefix A.stratification j τ)) :
-    Filter.Tendsto (tierLeadingCoeffPath A j) (puncturedNhds τ)
-      (nhds ((A.nestedFamily.step j).lead (gatePrefix A.stratification j τ))) :=
-  tierLeadingCoeffPath_tendsto_of_continuousAt A
-    (continuousAt_gatePrefix A.stratification hs) hlead
-
 /-- Leading-coefficient tendsto transported through packaged polynomial-tail data. -/
 theorem tierLeadingCoeffPath_tendsto_of_polynomialTailData_continuousAt {m : Nat}
     (A : TierSystem m) {j : Nat} {τ : ℂ}
@@ -233,20 +222,6 @@ theorem tierLeadingCoeffPath_tendsto_of_polynomialTailData_continuousAt {m : Nat
       (nhds ((A.nestedFamily.step j).lead (gatePrefix A.stratification j τ))) := by
   exact tierLeadingCoeffPath_tendsto_of_continuousAt A hprefix (by
     simpa [hstep] using hlead)
-
-/-- Canonical-polynomial version of the leading-coefficient tendsto bridge. -/
-theorem tierLeadingCoeffPath_tendsto_of_polynomialTailPresentation {m : Nat}
-    (A : TierSystem m) {j : Nat} {τ : ℂ}
-    (p : MvPolynomial (Fin (j + 1)) ℂ)
-    (hstep : A.nestedFamily.step j = polynomialTailPresentation p)
-    (hprefix : ContinuousAt (fun z => gatePrefix A.stratification j z) τ) :
-    Filter.Tendsto (tierLeadingCoeffPath A j) (puncturedNhds τ)
-      (nhds ((A.nestedFamily.step j).lead (gatePrefix A.stratification j τ))) :=
-  tierLeadingCoeffPath_tendsto_of_polynomialTailData_continuousAt A
-    (PolynomialTailPresentationData.ofPolynomial p) hstep hprefix
-    (by
-      simpa using
-        (continuous_polynomialTailPresentation_lead p).continuousAt)
 
 /-! ## Polynomial-tail bridge helpers -/
 
@@ -264,37 +239,6 @@ theorem tierPhiPath_eq_polynomialTailData_eval {m : Nat} (A : TierSystem m)
     _ = MvPolynomial.eval (gatePrefix A.stratification (j + 1) τ) D.poly := by
           simpa using D.eval_eq (gatePrefix A.stratification (j + 1) τ)
 
-/-- Specialization of `tierPhiPath_eq_polynomialTailData_eval` to the canonical
-`polynomialTailPresentation`. -/
-theorem tierPhiPath_eq_polynomialTailPresentation_eval {m : Nat} (A : TierSystem m)
-    {j : Nat} (p : MvPolynomial (Fin (j + 1)) ℂ)
-    (hstep : A.nestedFamily.step j = polynomialTailPresentation p) (τ : ℂ) :
-    tierPhiPath A j τ =
-      MvPolynomial.eval (gatePrefix A.stratification (j + 1) τ) p := by
-  simpa using
-    tierPhiPath_eq_polynomialTailData_eval A
-      (PolynomialTailPresentationData.ofPolynomial p) hstep τ
-
-/-- If the `j`-th nested-family step is supplied by packaged polynomial-tail data, then
-the tier leading-coefficient path is the packaged leading coefficient on gate prefixes. -/
-theorem tierLeadingCoeffPath_eq_polynomialTailData_lead {m : Nat} (A : TierSystem m)
-    {j : Nat} (D : PolynomialTailPresentationData j)
-    (hstep : A.nestedFamily.step j = D.presentation) (τ : ℂ) :
-    tierLeadingCoeffPath A j τ =
-      D.presentation.lead (gatePrefix A.stratification j τ) := by
-  simp [tierLeadingCoeffPath, hstep]
-
-/-- Specialization of `tierLeadingCoeffPath_eq_polynomialTailData_lead` to the canonical
-`polynomialTailPresentation`. -/
-theorem tierLeadingCoeffPath_eq_polynomialTailPresentation_lead {m : Nat}
-    (A : TierSystem m) {j : Nat} (p : MvPolynomial (Fin (j + 1)) ℂ)
-    (hstep : A.nestedFamily.step j = polynomialTailPresentation p) (τ : ℂ) :
-    tierLeadingCoeffPath A j τ =
-      (polynomialTailPresentation p).lead (gatePrefix A.stratification j τ) := by
-  simpa using
-    tierLeadingCoeffPath_eq_polynomialTailData_lead A
-      (PolynomialTailPresentationData.ofPolynomial p) hstep τ
-
 /-- Convert concrete equality with a packaged polynomial evaluator into the
 `PropagationData.polynomial_decomposition` shape. -/
 theorem polynomial_decomposition_of_polynomialTailData {m : Nat} (A : TierSystem m)
@@ -307,18 +251,6 @@ theorem polynomial_decomposition_of_polynomialTailData {m : Nat} (A : TierSystem
   hH.mono fun z hz => by
     rw [hz]
     exact (tierPhiPath_eq_polynomialTailData_eval A D hstep z).symm
-
-/-- Canonical-polynomial version of `polynomial_decomposition_of_polynomialTailData`. -/
-theorem polynomial_decomposition_of_polynomialTailPresentation {m : Nat}
-    (A : TierSystem m) {j : Nat} {τ : ℂ}
-    (p : MvPolynomial (Fin (j + 1)) ℂ)
-    (hstep : A.nestedFamily.step j = polynomialTailPresentation p)
-    (hH :
-      A.stratification.H (j + 1) =ᶠ[puncturedNhds τ]
-        fun z => MvPolynomial.eval (gatePrefix A.stratification (j + 1) z) p) :
-    A.stratification.H (j + 1) =ᶠ[puncturedNhds τ] tierPhiPath A j :=
-  polynomial_decomposition_of_polynomialTailData A
-    (PolynomialTailPresentationData.ofPolynomial p) hstep hH
 
 /-- Polynomial data sufficient to fill the `polynomial_decomposition` field of
 `PropagationData`.  The remaining analytic obligations are deliberately kept out of this
@@ -343,14 +275,6 @@ theorem polynomial_decomposition {m : Nat} {A : TierSystem m}
   intro j τ hj hτ
   exact polynomial_decomposition_of_polynomialTailData A (D.tailData j)
     (D.step_eq j) (D.H_eq_poly hj hτ)
-
-/-- The leading coefficient path of a polynomial-backed propagation step is the packaged
-leading evaluator along the concrete gate prefix. -/
-theorem tierLeadingCoeffPath_eq_lead {m : Nat} {A : TierSystem m}
-    (D : PropagationPolynomialData A) (j : Nat) (τ : ℂ) :
-    tierLeadingCoeffPath A j τ =
-      (D.tailData j).presentation.lead (gatePrefix A.stratification j τ) :=
-  tierLeadingCoeffPath_eq_polynomialTailData_lead A (D.tailData j) (D.step_eq j) τ
 
 /-- Fill the `PropagationData.leadingCoeff_tendsto` field from continuity of the concrete
 gate prefix and the packaged polynomial-tail leading evaluator. -/
@@ -684,23 +608,6 @@ theorem tierPhiPath_eventuallyEq_quadratic_leading_add_tailLowerSum {m : Nat}
   rw [tierPhiPath_eq_leadingCoeff_mul_pow_add_tailLowerSum A j z]
   rw [hdegree, pow_two]
 
-/-- Boundedness of each lower term gives boundedness of the whole lower-order tail. -/
-theorem tierTailLowerSum_puncturedBounded {m : Nat} (A : TierSystem m)
-    {j : Nat} {τ : ℂ}
-    (hlower :
-      ∀ i : Fin (A.nestedFamily.step j).degree,
-        PuncturedBoundedAt
-          (fun z =>
-            (A.nestedFamily.step j).lower i (gatePrefix A.stratification j z) *
-              (A.stratification.s j z) ^ (i : Nat)) τ) :
-    PuncturedBoundedAt (tierTailLowerSum A j) τ := by
-  simpa [tierTailLowerSum] using
-    (PuncturedBoundedAt.fintype_sum
-      (F := fun i z =>
-        (A.nestedFamily.step j).lower i (gatePrefix A.stratification j z) *
-          (A.stratification.s j z) ^ (i : Nat))
-      (τ := τ) hlower)
-
 /-- For a quadratic tail presentation, the lower-order tail is bounded by the explicit
 threshold times the leading coefficient and one power of the last variable.
 
@@ -956,34 +863,6 @@ theorem phi_blowsUpAt_of_quadratic_tailLowerSum {m : Nat} (A : TierSystem m)
   phi_blowsUpAt_of_quadratic_remainder A (tierTailLowerSum A j)
     (tierPhiPath_eventuallyEq_quadratic_leading_add_tailLowerSum A hdegree)
     hlower hgate hlead0 hlead_tendsto
-
-/-- The nested-largeness evaluator is nonzero at successor-tier points when the current
-leading coefficient is nonzero on the current nested region. -/
-theorem tierPhiPath_ne_zero_of_mem_successor {m : Nat} (A : TierSystem m)
-    {j : Nat} {τ : ℂ}
-    (hlead :
-      ∀ x : Fin j -> ℂ, x ∈ A.nestedFamily.region j ->
-        (A.nestedFamily.step j).lead x ≠ 0)
-    (hτ : τ ∈ A.T (j + 1)) :
-    tierPhiPath A j τ ≠ 0 := by
-  have hz : gatePrefix A.stratification (j + 1) τ ∈ A.nestedFamily.region (j + 1) :=
-    A.mem_region hτ
-  simpa [tierPhiPath] using
-    A.nestedFamily.evalStep_ne_zero_of_mem_region
-      (m := j) (z := gatePrefix A.stratification (j + 1) τ) hlead hz
-
-/-- Polynomial-evaluator nonvanishing at successor-tier points, transported through a
-packaged polynomial-tail presentation. -/
-theorem polynomialTailData_eval_ne_zero_of_mem_successor {m : Nat} (A : TierSystem m)
-    {j : Nat} {τ : ℂ} (D : PolynomialTailPresentationData j)
-    (hstep : A.nestedFamily.step j = D.presentation)
-    (hlead :
-      ∀ x : Fin j -> ℂ, x ∈ A.nestedFamily.region j ->
-        (A.nestedFamily.step j).lead x ≠ 0)
-    (hτ : τ ∈ A.T (j + 1)) :
-    MvPolynomial.eval (gatePrefix A.stratification (j + 1) τ) D.poly ≠ 0 := by
-  have hphi := tierPhiPath_ne_zero_of_mem_successor A hlead hτ
-  rwa [tierPhiPath_eq_polynomialTailData_eval A D hstep τ] at hphi
 
 /-! ## Propagation packages -/
 
@@ -1315,14 +1194,6 @@ def ofPolynomialNestedTailData {m : Nat} {A : TierSystem m}
     rfl
   H_eq_scaled := hH_scaled
 
-/-- The leading coefficient path of a scaled-polynomial-backed propagation step is the
-packaged leading evaluator along the concrete gate prefix. -/
-theorem tierLeadingCoeffPath_eq_lead {m : Nat} {A : TierSystem m}
-    (D : ScaledPropagationPolynomialData A) (j : Nat) (τ : ℂ) :
-    tierLeadingCoeffPath A j τ =
-      (D.tailData j).presentation.lead (gatePrefix A.stratification j τ) :=
-  tierLeadingCoeffPath_eq_polynomialTailData_lead A (D.tailData j) (D.step_eq j) τ
-
 /-- Fill the scaled bridge leading-coefficient limit from continuity of the concrete
 gate prefix and the packaged polynomial-tail leading evaluator. -/
 theorem leadingCoeff_tendsto_of_continuousAt {m : Nat} {A : TierSystem m}
@@ -1338,16 +1209,6 @@ theorem leadingCoeff_tendsto_of_continuousAt {m : Nat} {A : TierSystem m}
 end ScaledPropagationPolynomialData
 
 namespace PropagationBridgeData
-
-/-- Build the original propagation package from polynomial-tail bridge data and the
-remaining analytic obligations. -/
-def toPropagationData {m : Nat} {A : TierSystem m}
-    (D : PropagationBridgeData A) : PropagationData A where
-  polynomial_decomposition := PropagationPolynomialData.polynomial_decomposition D.polynomial
-  leadingCoeff_ne_on_region := D.leadingCoeff_ne_on_region
-  leadingCoeff_tendsto := D.leadingCoeff_tendsto
-  phi_blowsUpAt_of_gate := D.phi_blowsUpAt_of_gate
-  levelSet_frequently := D.levelSet_frequently
 
 end PropagationBridgeData
 
@@ -1379,21 +1240,6 @@ theorem phi_blowsUpAt_of_gate {m : Nat} {A : TierSystem m}
     (D.quadratic_degree hj hτ)
     (D.threshold_puncturedBounded hj hτ)
     hgate hlead hlead_tendsto
-
-/-- Compile analytic propagation data into the bridge package consumed by the existing
-Claim-B proof. -/
-def toPropagationBridgeData {m : Nat} {A : TierSystem m}
-    (D : PropagationAnalyticData A) : PropagationBridgeData A where
-  polynomial := D.polynomial
-  leadingCoeff_ne_on_region := D.leadingCoeff_ne_on_region
-  leadingCoeff_tendsto := PropagationAnalyticData.leadingCoeff_tendsto D
-  phi_blowsUpAt_of_gate := PropagationAnalyticData.phi_blowsUpAt_of_gate D
-  levelSet_frequently := D.levelSet_frequently
-
-/-- Direct compilation from analytic propagation data to the full propagation package. -/
-def toPropagationData {m : Nat} {A : TierSystem m}
-    (D : PropagationAnalyticData A) : PropagationData A :=
-  D.toPropagationBridgeData.toPropagationData
 
 end PropagationAnalyticData
 
@@ -1463,10 +1309,6 @@ theorem chain :
     ∀ j : Nat, j + 1 < m -> A.T j ⊆ acc (A.T (j + 1)) :=
   PropagationData.tier_subset_acc_succ D
 
-/-- Package the proved chain as a `TierPropagation`. -/
-def toTierPropagation : TierPropagation A where
-  chain := fun j hj => PropagationData.tier_subset_acc_succ D j hj
-
 end PropagationData
 
 namespace ScaledPropagationBridgeData
@@ -1529,10 +1371,6 @@ theorem tier_subset_acc_succ (j : Nat) (hj : j + 1 < m) :
 theorem chain :
     ∀ j : Nat, j + 1 < m -> A.T j ⊆ acc (A.T (j + 1)) :=
   ScaledPropagationBridgeData.tier_subset_acc_succ D
-
-/-- Package the corrected scaled proof as a `TierPropagation`. -/
-def toTierPropagation : TierPropagation A where
-  chain := fun j hj => ScaledPropagationBridgeData.tier_subset_acc_succ D j hj
 
 end ScaledPropagationBridgeData
 
@@ -1705,21 +1543,6 @@ theorem phi_blowsUpAt_of_gate {m : Nat} {A : TierSystem m}
     (D.quadratic_degree hj hτ)
     (D.threshold_puncturedBounded hj hτ)
     hgate hlead hlead_tendsto
-
-/-- Compile analytic scaled propagation data into the corrected bridge package. -/
-def toScaledPropagationBridgeData {m : Nat} {A : TierSystem m}
-    (D : ScaledPropagationAnalyticData A) : ScaledPropagationBridgeData A where
-  polynomial := D.polynomial
-  leadingCoeff_ne_on_region := D.leadingCoeff_ne_on_region
-  leadingCoeff_tendsto := ScaledPropagationAnalyticData.leadingCoeff_tendsto D
-  phi_blowsUpAt_of_gate := ScaledPropagationAnalyticData.phi_blowsUpAt_of_gate D
-  levelSet_frequently := D.levelSet_frequently
-
-/-- Direct compilation from analytic scaled propagation data to the final propagation
-chain. -/
-def toTierPropagation {m : Nat} {A : TierSystem m}
-    (D : ScaledPropagationAnalyticData A) : TierPropagation A :=
-  D.toScaledPropagationBridgeData.toTierPropagation
 
 end ScaledPropagationAnalyticData
 
@@ -1954,22 +1777,12 @@ namespace TierPropagation
 variable {m : Nat} {A : TierSystem m} (P : TierPropagation A)
 include P
 
-/-- Accessor for the one-step propagation subset. -/
-theorem subset_acc_succ (j : Nat) (hj : j + 1 < m) :
-    A.T j ⊆ acc (A.T (j + 1)) :=
-  TierPropagation.chain P j hj
-
 end TierPropagation
 
 namespace ZeroFreeTierPropagation
 
 variable {m : Nat} {A : TierSystem m} (P : ZeroFreeTierPropagation A)
 include P
-
-/-- Accessor for the one-step zero-free propagation subset. -/
-theorem subset_acc_succ (j : Nat) (hj : j + 1 < m) :
-    A.T0 j ⊆ acc (A.T0 (j + 1)) :=
-  ZeroFreeTierPropagation.chain P j hj
 
 end ZeroFreeTierPropagation
 

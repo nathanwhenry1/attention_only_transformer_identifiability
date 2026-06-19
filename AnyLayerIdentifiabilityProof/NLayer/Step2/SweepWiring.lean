@@ -242,28 +242,6 @@ noncomputable def texSweepCanonicalIFTData_of_IDLData_matching_univ
       (idlChosenFullAnchor_fst_mem_O D hanchor) (idlChosenFullAnchor D).2
       (texSweepFullAnchorChoiceCompatible_idlChosenFullAnchor D)
 
-/-- **The sweep frontier at the top node, via tail-anchor uniqueness.**
-
-Convenience wrapper matching the originally-requested signature: the full anchor is
-selected internally (from `D.anchor_nonempty`), and the full-anchor/canonical compatibility
-is discharged from `TexSweepTailAnchorUnique D`.
-
-This is offered only for callers who can supply uniqueness.  As documented in the module
-header, `TexSweepTailAnchorUnique D` is *provably false* at a depth-one tail
-(`not_texSweepTailAnchorUnique_of_tail_depth_one`), so it is not dischargeable at the base
-of the descent; the compatibility-based
-`texSweepCanonicalIFTData_of_IDLData_matching` is the honest general entry point. -/
-noncomputable def texSweepCanonicalIFTData_of_IDLData_matching_tailAnchorUnique
-    {L d r : ℕ} (_hr : 2 ≤ r) {θ θ' : Params (L + 2) d}
-    (D : IDLData (L + 2) d r θ θ')
-    (matching : FirstLayerMatchedData θ θ')
-    (hPaths : D.Paths = Set.univ)
-    (hunique : TexSweepTailAnchorUnique D) :
-    TexSweepCanonicalIFTData D :=
-  texSweepCanonicalIFTData_of_fullAnchorLocalRealizationData_tailAnchorUnique_reduced D
-    (texSweepFullAnchorLocalRealizationData_of_IDLData_matching D matching hPaths)
-    hunique
-
 /-! ## The sweep frontier at a recursive realized-tail node (`FullPaths = univ`)
 
 The realized-tail analogue of `texSweepCanonicalIFTData_of_IDLData_matching_univ`.  At the

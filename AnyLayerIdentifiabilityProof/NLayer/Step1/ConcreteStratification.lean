@@ -170,33 +170,6 @@ theorem of_eq_affineOddPiIStratum {S0 : Set ℂ} {b lambda : ℝ}
     FirstStratumFormula S0 b lambda :=
   (firstStratumFormula_affineOddPiI b lambda).congr hS0
 
-/-- Build the first-stratum formula from the standard case split. -/
-theorem of_eq_if {S0 : Set ℂ} {b lambda : ℝ}
-    (hS0 : S0 = if lambda = 0 then ∅ else firstPoleSet b lambda) :
-    FirstStratumFormula S0 b lambda where
-  nonzero := by
-    intro hlambda
-    rw [hS0, if_neg hlambda]
-  zero := by
-    intro hlambda
-    rw [hS0, if_pos hlambda]
-
-theorem mem_iff_of_lambda_ne_zero {S0 : Set ℂ} {b lambda : ℝ}
-    (F : FirstStratumFormula S0 b lambda) (hlam : lambda ≠ 0) {τ : ℂ} :
-    τ ∈ S0 ↔ ∃ n : ℤ, τ = sigmoidPole b lambda n := by
-  rw [F.nonzero hlam]
-  constructor
-  · rintro ⟨n, hn⟩
-    exact ⟨n, hn.symm⟩
-  · rintro ⟨n, hn⟩
-    exact ⟨n, hn.symm⟩
-
-theorem notMem_of_lambda_eq_zero {S0 : Set ℂ} {b lambda : ℝ}
-    (F : FirstStratumFormula S0 b lambda) (hlam : lambda = 0) (τ : ℂ) :
-    τ ∉ S0 := by
-  rw [F.zero hlam]
-  simp
-
 end FirstStratumFormula
 
 /-- Scalar last-layer expansion for a fixed constant probe and a fixed output
@@ -356,18 +329,6 @@ theorem lower_puncturedBounded {s : Nat -> ℂ -> ℂ} {observable : ℂ -> ℂ}
     exact (hs i (Finset.mem_range.mp hi)).mul (hc i (Finset.mem_range.mp hi))
   exact (PuncturedBoundedAt.const E.base τ).add hsum
 
-/-- Continuous lower gates and coefficients are enough to bound the lower last-layer
-contribution near a point. -/
-theorem lower_puncturedBounded_of_continuousAt {s : Nat -> ℂ -> ℂ}
-    {observable : ℂ -> ℂ} {m : Nat} (E : LastLayerExpansion s (m + 1) observable)
-    {τ : ℂ}
-    (hs : ∀ i, i < m -> ContinuousAt (s i) τ)
-    (hc : ∀ i, i < m -> ContinuousAt (E.coeff i) τ) :
-    PuncturedBoundedAt E.lower τ :=
-  E.lower_puncturedBounded
-    (fun i hi => PuncturedBoundedAt.of_continuousAt (hs i hi))
-    (fun i hi => PuncturedBoundedAt.of_continuousAt (hc i hi))
-
 /-- Claim-C-ready consequence of the split last-layer formula. -/
 theorem observable_blowsUpAt_of_last_gate {s : Nat -> ℂ -> ℂ} {observable : ℂ -> ℂ}
     {m : Nat} (E : LastLayerExpansion s (m + 1) observable) {τ visible0 : ℂ}
@@ -463,19 +424,6 @@ theorem constantProbeGate_zero_paramStream_eq_sig {L d : Nat}
     ((sig (τ * firstSlope θ w v + Real.log r) : ℝ) : ℂ)
   rw [harg, csig_ofReal]
 
-/-- The first concrete preactivation is continuous. -/
-theorem continuous_constantProbeGateArgument_zero {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) :
-    Continuous (constantProbeGateArgument θ b w v 0) := by
-  rw [constantProbeGateArgument_zero θ b w v]
-  fun_prop
-
-/-- The first concrete preactivation is continuous at every point. -/
-theorem continuousAt_constantProbeGateArgument_zero {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (τ : ℂ) :
-    ContinuousAt (constantProbeGateArgument θ b w v 0) τ :=
-  (continuous_constantProbeGateArgument_zero θ b w v).continuousAt
-
 /-- On real probe parameters, every concrete preactivation remains on the embedded
 real axis.  The proof is the recursive formal-stream real-valuedness argument:
 earlier real gates make the formal slope real, and `τ * φ + b` is then real. -/
@@ -506,17 +454,6 @@ theorem constantProbeGateArgument_isComplexReal_of_real {d : Nat}
       have hx : IsComplexReal (x : ℂ) := IsComplexReal.ofReal x
       have hb : IsComplexReal (b : ℂ) := IsComplexReal.ofReal b
       simpa [constantProbeGateArgument] using (hx.mul hphi).add hb
-
-/-- On real probe parameters, every recursively defined concrete gate is real-valued. -/
-theorem constantProbeGate_isComplexReal_of_real {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (x : ℝ) (j : Nat) :
-    IsComplexReal (constantProbeGate θ b w v j (x : ℂ)) := by
-  rw [constantProbeGate_eq_csig θ b w v j]
-  change IsComplexReal
-    (csig (constantProbeGateArgument θ b w v j (x : ℂ)))
-  rcases constantProbeGateArgument_isComplexReal_of_real θ b w v x j with ⟨a, ha⟩
-  rw [ha]
-  simpa [csig_ofReal] using IsComplexReal.ofReal (sig a)
 
 /-- Concrete stratum definition: new points where the `j`-th preactivation hits `Π`,
 after removing all previous strata. -/
@@ -861,54 +798,6 @@ theorem constantProbeStratum_zero_eq_affineOddPiIStratum {d : Nat}
   simp [constantProbeStratum, partialUnion, affineOddPiIStratum,
     constantProbeGateArgument_zero θ b w v]
 
-/-- The first concrete stratum is closed. -/
-theorem constantProbeStratum_zero_closed {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) :
-    IsClosed (constantProbeStratum θ b w v 0) := by
-  rw [constantProbeStratum_zero_eq_affineOddPiIStratum θ b w v]
-  exact affineOddPiIStratum_closed b (constantProbeFirstSlope θ w v)
-
-/-- The first concrete stratum is countable. -/
-theorem constantProbeStratum_zero_countable {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) :
-    (constantProbeStratum θ b w v 0).Countable := by
-  rw [constantProbeStratum_zero_eq_affineOddPiIStratum θ b w v]
-  exact affineOddPiIStratum_countable b (constantProbeFirstSlope θ w v)
-
-/-- The first concrete stratum avoids the real axis. -/
-theorem constantProbeStratum_zero_avoids_real {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (x : ℝ) :
-    (x : ℂ) ∉ constantProbeStratum θ b w v 0 := by
-  rw [constantProbeStratum_zero_eq_affineOddPiIStratum θ b w v]
-  exact affineOddPiIStratum_avoids_real b (constantProbeFirstSlope θ w v) x
-
-/-- The first concrete stratum has no accumulation point in the initial regular
-domain. -/
-theorem constantProbeStratum_zero_noAccumIn_univ {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) :
-    NoAccumIn (constantProbeStratum θ b w v 0) Set.univ := by
-  rw [constantProbeStratum_zero_eq_affineOddPiIStratum θ b w v]
-  exact affineOddPiIStratum_noAccumIn_univ b (constantProbeFirstSlope θ w v)
-
-/-- The one-stratum `StrataSystem` for the first constant-probe stratum. -/
-theorem constantProbeStrataSystem_one {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) :
-    StrataSystem (constantProbeStratum θ b w v) 1 where
-  closed_partial := by
-    intro n hn
-    cases n with
-    | zero =>
-        simp
-    | succ n =>
-        have hn0 : n = 0 := by omega
-        subst n
-        simpa [partialUnion_one] using constantProbeStratum_zero_closed θ b w v
-  noAccumIn := by
-    intro j hj
-    have hj0 : j = 0 := by omega
-    subst j
-    simpa [partialUnion_zero] using constantProbeStratum_zero_noAccumIn_univ θ b w v
-
 /-- The concrete first stratum satisfies the downstream first-stratum formula. -/
 theorem constantProbeFirstStratumFormula {d : Nat} (θ : LayerStream d) (b : ℝ)
     (w v : Fin d -> ℝ) :
@@ -1005,50 +894,6 @@ theorem constantProbeObservable_paramStream_zero_eq_Frec {d : Nat}
     constantProbeObservable (paramStream θ) (Real.log r) w v 0 iota (τ : ℂ) =
       (Frec r θ w v τ iota : ℂ) := by
   simp [constantProbeObservable_zero (paramStream θ) (Real.log r) w v iota, Frec]
-
-/-- Depth-zero observable bridge to the public transformer observable on positive real
-probe parameters. -/
-theorem constantProbeObservable_paramStream_zero_eq_Fobs_apply_of_pos {d : Nat}
-    (r : Nat) (hr : 0 < r) (θ : Params 0 d) (w v : Fin d -> ℝ)
-    (iota : Fin d) {τ : ℝ} (hτ : 0 < τ) :
-    constantProbeObservable (paramStream θ) (Real.log r) w v 0 iota (τ : ℂ) =
-      (Fobs r θ w v τ iota : ℂ) := by
-  rw [constantProbeObservable_paramStream_zero_eq_Frec]
-  rw [← Fobs_apply_eq_Frec_apply_of_pos r hr θ w v hτ iota]
-
-/-- One-layer observable bridge to the public real recursion. -/
-theorem constantProbeObservable_paramStream_one_eq_Frec {d : Nat}
-    (r : Nat) (θ : Params 1 d) (w v : Fin d -> ℝ) (iota : Fin d) (τ : ℝ) :
-    constantProbeObservable (paramStream θ) (Real.log r) w v 1 iota (τ : ℂ) =
-      (Frec r θ w v τ iota : ℂ) := by
-  simp [constantProbeObservable, constantProbeGateStream, formalVVec, formalWVec,
-    constantProbeGate_zero_paramStream_eq_sig, paramStream, skipB, matC, vecC,
-    Matrix.mulVec, dotProduct, Frec, firstSlope, firstAttention, matrixBilin]
-  ring_nf
-  rw [Finset.sum_add_distrib]
-  have hone :
-      (∑ x : Fin d, (((1 : Matrix (Fin d) (Fin d) ℝ) iota x : ℝ) : ℂ) * (v x : ℂ)) =
-        (v iota : ℂ) := by
-    rw [Finset.sum_eq_single iota]
-    · simp
-    · intro b _hb hb
-      have hzero : (1 : Matrix (Fin d) (Fin d) ℝ) iota b = 0 :=
-        Matrix.one_apply_ne hb.symm
-      rw [hzero]
-      simp
-    · intro hi
-      exact (hi (Finset.mem_univ iota)).elim
-  rw [hone]
-
-/-- One-layer observable bridge to the public transformer observable on positive real
-probe parameters. -/
-theorem constantProbeObservable_paramStream_one_eq_Fobs_apply_of_pos {d : Nat}
-    (r : Nat) (hr : 0 < r) (θ : Params 1 d) (w v : Fin d -> ℝ)
-    (iota : Fin d) {τ : ℝ} (hτ : 0 < τ) :
-    constantProbeObservable (paramStream θ) (Real.log r) w v 1 iota (τ : ℂ) =
-      (Fobs r θ w v τ iota : ℂ) := by
-  rw [constantProbeObservable_paramStream_one_eq_Frec]
-  rw [← Fobs_apply_eq_Frec_apply_of_pos r hr θ w v hτ iota]
 
 /-- The formal `w` vector after one head layer is the head-updated real probe vector
 when the head gate is real. -/
@@ -1412,48 +1257,6 @@ theorem constantProbeObservable_analyticOn_regular {d : Nat}
       _ = constantProbeObservable θ b w v m iota τ := rfl
   simpa [U, hEq] using hpoly
 
-/-- The lower term in the final one-step recurrence is analytic off the first `m`
-strata. -/
-theorem constantProbeLastLower_analyticOn_regular {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (m : Nat) (iota : Fin d) :
-    AnalyticOnNhd ℂ (constantProbeLastLower θ b w v m iota)
-      (partialUnion (constantProbeStratum θ b w v) m)ᶜ := by
-  let U : Set ℂ := (partialUnion (constantProbeStratum θ b w v) m)ᶜ
-  let x : ℂ -> Fin m -> ℂ :=
-    fun τ i => constantProbeGate θ b w v (i : Nat) τ
-  let p : GatePoly m :=
-    (matPolyC (skipB (θ m).1) *ᵥ formalVVecPoly θ m w v) iota
-  have hgate : ∀ i : Fin m, AnalyticOnNhd ℂ (fun τ => x τ i) U := by
-    intro i
-    exact constantProbeGate_analyticOn_later_omega θ b w v i.isLt
-  have hpoly :
-      AnalyticOnNhd ℂ (fun τ => MvPolynomial.eval (x τ) p) U :=
-    gatePolynomial_eval_analyticOnNhd p hgate
-  have hEq :
-      (fun τ => MvPolynomial.eval (x τ) p) =
-        constantProbeLastLower θ b w v m iota := by
-    funext τ
-    have hevalMul :=
-      congrFun
-        (eval_mulVec (x τ) (matPolyC (skipB (θ m).1))
-          (formalVVecPoly θ m w v)) iota
-    have hstream :
-        formalVVec θ m (extendGate (x τ)) w v =
-          formalVVec θ m (constantProbeGateStream θ b w v τ) w v :=
-      formalVVec_congr_of_eqOn_lt θ w v (by
-        intro i hi
-        simp [x, extendGate, constantProbeGateStream, hi])
-    calc
-      MvPolynomial.eval (x τ) p
-          = (matC (skipB (θ m).1) *ᵥ
-              formalVVec θ m (extendGate (x τ)) w v) iota := by
-            simpa [p, eval_matPolyC, eval_formalVVecPoly] using hevalMul
-      _ = (matC (skipB (θ m).1) *ᵥ
-              formalVVec θ m (constantProbeGateStream θ b w v τ) w v) iota := by
-            rw [hstream]
-      _ = constantProbeLastLower θ b w v m iota τ := rfl
-  simpa [U, hEq] using hpoly
-
 /-- The visible coefficient in the final one-step recurrence is analytic off the first
 `m` strata. -/
 theorem constantProbeLastCoeff_analyticOn_regular {d : Nat}
@@ -1491,23 +1294,6 @@ theorem constantProbeLastCoeff_analyticOn_regular {d : Nat}
       _ = constantProbeLastCoeff θ b w v m iota τ := by
             simp [constantProbeLastCoeff, formalVisibleCoord]
   simpa [U, hEq] using hpoly
-
-/-- Regular-point boundedness for the lower term in the final one-step recurrence. -/
-theorem constantProbeLastLower_puncturedBoundedAt_of_regular {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (m : Nat) (iota : Fin d)
-    {τ : ℂ} (hτ : τ ∉ partialUnion (constantProbeStratum θ b w v) m) :
-    PuncturedBoundedAt (constantProbeLastLower θ b w v m iota) τ :=
-  PuncturedBoundedAt.of_continuousAt
-    ((constantProbeLastLower_analyticOn_regular θ b w v m iota τ hτ).continuousAt)
-
-/-- Regular-point boundedness for the visible coefficient in the final one-step
-recurrence. -/
-theorem constantProbeLastCoeff_puncturedBoundedAt_of_regular {d : Nat}
-    (θ : LayerStream d) (b : ℝ) (w v : Fin d -> ℝ) (m : Nat) (iota : Fin d)
-    {τ : ℂ} (hτ : τ ∉ partialUnion (constantProbeStratum θ b w v) m) :
-    PuncturedBoundedAt (constantProbeLastCoeff θ b w v m iota) τ :=
-  PuncturedBoundedAt.of_continuousAt
-    ((constantProbeLastCoeff_analyticOn_regular θ b w v m iota τ hτ).continuousAt)
 
 /-- Base expansion for the depth-zero selected observable. -/
 noncomputable def constantProbeObservableExpansion_zero {d : Nat} (θ : LayerStream d)
@@ -1773,25 +1559,6 @@ def ofStrataAndTendsto
       constantProbe_denom_eventually_ne_zero_of_strata θ b w v hstrata hj hτ)
     hpartialUnion_countable hpartialUnion_avoids_real
 
-/-- Constructor that reduces the analytic limit field to ordinary continuity of the
-concrete preactivation at each stratum point.  The punctured denominator nonvanishing is
-still derived from the stratum system. -/
-def ofStrataAndContinuousAt
-    (hstrata : StrataSystem (constantProbeStratum θ b w v) m)
-    (hH_continuousAt_stratum :
-      ∀ j, j < m -> ∀ τ, τ ∈ constantProbeStratum θ b w v j ->
-        ContinuousAt (constantProbeGateArgument θ b w v j) τ)
-    (hpartialUnion_countable :
-      ∀ n, n ≤ m -> (partialUnion (constantProbeStratum θ b w v) n).Countable)
-    (hpartialUnion_avoids_real :
-      ∀ n, n ≤ m -> ∀ x : ℝ,
-        (x : ℂ) ∉ partialUnion (constantProbeStratum θ b w v) n) :
-    ConstantProbeStrataCoreObligations θ b w v m :=
-  ConstantProbeStrataCoreObligations.ofStrataAndTendsto hstrata
-    (fun j hj τ hτ =>
-      (hH_continuousAt_stratum j hj τ hτ).tendsto.mono_left nhdsWithin_le_nhds)
-    hpartialUnion_countable hpartialUnion_avoids_real
-
 /-- Constructor from per-stratum countability and real-axis avoidance.  This is often
 the most convenient form for the concrete construction, where each stratum is proved
 discrete before finite partial unions are considered. -/
@@ -1869,87 +1636,6 @@ def ofNoAccumAndTendsto
     (fun j hj =>
       constantProbeStratum_countable_of_noAccumIn θ b w v j
         (hnoAccumIn j hj))
-
-/-- Tendsto-based constructor from analytic denominator non-collapse.  This is the
-non-circular `strat` shape: analytic denominator zero sets give the no-accumulation
-facts, while countability, closed partial unions, denominator punctured-nonvanishing,
-and real-axis avoidance are then automatic. -/
-def ofDenomAnalyticNoCollapseAndTendsto
-    (hD_analyticOn_omega :
-      ∀ j, j < m ->
-        AnalyticOnNhd ℂ (constantProbeDenom θ b w v j)
-          (partialUnion (constantProbeStratum θ b w v) j)ᶜ)
-    (hD_not_eventually_zero :
-      ∀ j, j < m -> ∀ τ,
-        τ ∉ partialUnion (constantProbeStratum θ b w v) j ->
-        constantProbeDenom θ b w v j τ = 0 ->
-          ¬ (∀ᶠ z in nhds τ, constantProbeDenom θ b w v j z = 0))
-    (hH_tendsto_at_stratum :
-      ∀ j, j < m -> ∀ τ, τ ∈ constantProbeStratum θ b w v j ->
-        Filter.Tendsto (constantProbeGateArgument θ b w v j)
-          (nhdsWithin τ ({τ}ᶜ : Set ℂ))
-          (nhds (constantProbeGateArgument θ b w v j τ))) :
-    ConstantProbeStrataCoreObligations θ b w v m :=
-  ConstantProbeStrataCoreObligations.ofNoAccumAndTendsto
-    (fun j hj =>
-      constantProbeStratum_noAccumIn_of_denom_analyticOnNhd_of_not_eventually_zero
-        θ b w v j (hD_analyticOn_omega j hj)
-        (hD_not_eventually_zero j hj))
-    hH_tendsto_at_stratum
-
-/-- Fully reduced constant-probe constructor: once the concrete construction supplies
-the `StrataSystem`, continuity of each preactivation at its stratum points, and
-per-stratum size/real-axis facts, the remaining sigmoid-pole fields are automatic. -/
-def ofStrataAndContinuousAtOfStrataFacts
-    (hstrata : StrataSystem (constantProbeStratum θ b w v) m)
-    (hH_continuousAt_stratum :
-      ∀ j, j < m -> ∀ τ, τ ∈ constantProbeStratum θ b w v j ->
-        ContinuousAt (constantProbeGateArgument θ b w v j) τ)
-    (hstratum_countable :
-      ∀ j, j < m -> (constantProbeStratum θ b w v j).Countable)
-    (hstratum_avoids_real :
-      ∀ j, j < m -> ∀ x : ℝ, (x : ℂ) ∉ constantProbeStratum θ b w v j) :
-    ConstantProbeStrataCoreObligations θ b w v m :=
-  ConstantProbeStrataCoreObligations.ofStrataAndContinuousAt hstrata
-    hH_continuousAt_stratum
-    (partialUnion_countable_of_strata_countable hstratum_countable)
-    (partialUnion_avoids_real_of_strata_avoids_real hstratum_avoids_real)
-
-/-- Fully reduced constant-probe constructor with real-axis avoidance discharged by
-the concrete recursive constant-probe construction. -/
-def ofStrataAndContinuousAtOfStrataCountable
-    (hstrata : StrataSystem (constantProbeStratum θ b w v) m)
-    (hH_continuousAt_stratum :
-      ∀ j, j < m -> ∀ τ, τ ∈ constantProbeStratum θ b w v j ->
-        ContinuousAt (constantProbeGateArgument θ b w v j) τ)
-    (hstratum_countable :
-      ∀ j, j < m -> (constantProbeStratum θ b w v j).Countable) :
-    ConstantProbeStrataCoreObligations θ b w v m :=
-  ConstantProbeStrataCoreObligations.ofStrataAndContinuousAtOfStrataFacts hstrata
-    hH_continuousAt_stratum hstratum_countable
-    (fun j _hj x => constantProbeStratum_avoids_real θ b w v j x)
-
-/-- Continuity-based version of `ofNoAccumAndTendstoOfStrataCountable`.  This is the
-preferred full-tower constructor for the concrete stratification proof: the remaining
-mathematical fields are per-stratum no-accumulation, continuity of `H_j` at stratum
-points, and per-stratum countability. -/
-def ofNoAccumAndContinuousAtOfStrataCountable
-    (hnoAccumIn :
-      ∀ j, j < m ->
-        NoAccumIn
-          (constantProbeStratum θ b w v j)
-          (partialUnion (constantProbeStratum θ b w v) j)ᶜ)
-    (hH_continuousAt_stratum :
-      ∀ j, j < m -> ∀ τ, τ ∈ constantProbeStratum θ b w v j ->
-        ContinuousAt (constantProbeGateArgument θ b w v j) τ)
-    (hstratum_countable :
-      ∀ j, j < m -> (constantProbeStratum θ b w v j).Countable) :
-    ConstantProbeStrataCoreObligations θ b w v m :=
-  ConstantProbeStrataCoreObligations.ofNoAccumAndTendstoOfStrataCountable
-    hnoAccumIn
-    (fun j hj τ hτ =>
-      (hH_continuousAt_stratum j hj τ hτ).tendsto.mono_left nhdsWithin_le_nhds)
-    hstratum_countable
 
 /-- Leanest continuity-based full-tower constructor.  The remaining geometric field is
 exactly per-stratum no-accumulation in the previous regular domain. -/
@@ -2054,19 +1740,6 @@ def ofHAnalyticOnOmegaAndDenomNoCollapse
       (hH_analyticOn_omega j hj τ
         (constantProbeStratum_regular θ b w v j hτ)).continuousAt)
 
-/-- Fully concrete core constant-probe strata package for the first stratum. -/
-def depthOne :
-    ConstantProbeStrataCoreObligations θ b w v 1 :=
-  ConstantProbeStrataCoreObligations.ofNoAccumAndContinuousAt
-    (fun j hj => by
-      have hj0 : j = 0 := by omega
-      subst j
-      simpa [partialUnion_zero] using constantProbeStratum_zero_noAccumIn_univ θ b w v)
-    (fun j hj τ _hτ => by
-      have hj0 : j = 0 := by omega
-      subst j
-      exact continuousAt_constantProbeGateArgument_zero θ b w v τ)
-
 variable (D : ConstantProbeStrataCoreObligations θ b w v m)
 include D
 
@@ -2114,11 +1787,6 @@ def ofAnalyticOnNhd
   observable_analyticOn_regular := hobservable_analyticOn_regular
   observable_continuousAt_regular := fun τ hτ =>
     (hobservable_analyticOn_regular τ hτ).continuousAt
-
-theorem observable_puncturedBoundedAt_of_regular {τ : ℂ}
-    (hτ : τ ∉ partialUnion S m) :
-    PuncturedBoundedAt observable τ :=
-  PuncturedBoundedAt.of_continuousAt (D.observable_continuousAt_regular τ hτ)
 
 end ConcreteAnalyticObligations
 
@@ -2352,12 +2020,6 @@ theorem stratum_subset_singular_through {m : Nat} (P : ConcreteStratification m)
   intro τ hτ
   exact ⟨j, Nat.lt_succ_self j, hτ⟩
 
-theorem stratum_countable {m : Nat} (P : ConcreteStratification m) {j : Nat}
-    (hj : j < m) :
-    (P.S j).Countable := by
-  exact (P.partialUnion_countable (j + 1) (Nat.succ_le_of_lt hj)).mono
-    (P.stratum_subset_singular_through hj)
-
 theorem stratum_avoids_real {m : Nat} (P : ConcreteStratification m) {j : Nat}
     (hj : j < m) (x : ℝ) :
     (x : ℂ) ∉ P.S j := by
@@ -2393,25 +2055,10 @@ theorem first_stratum_eq_firstPoleSet {m : Nat} (P : ConcreteStratification m)
     P.S 0 = firstPoleSet P.b P.lambda1 :=
   P.firstStratum.nonzero hlam
 
-theorem first_stratum_subset_firstPoleSet {m : Nat} (P : ConcreteStratification m)
-    (hlam : P.lambda1 ≠ 0) :
-    P.S 0 ⊆ firstPoleSet P.b P.lambda1 := by
-  rw [P.first_stratum_eq_firstPoleSet hlam]
-
 theorem first_stratum_eq_empty {m : Nat} (P : ConcreteStratification m)
     (hlam : P.lambda1 = 0) :
     P.S 0 = ∅ :=
   P.firstStratum.zero hlam
-
-theorem mem_first_stratum_iff_of_lambda_ne_zero {m : Nat} (P : ConcreteStratification m)
-    (hlam : P.lambda1 ≠ 0) {τ : ℂ} :
-    τ ∈ P.S 0 ↔ ∃ n : ℤ, τ = sigmoidPole P.b P.lambda1 n := by
-  rw [P.first_stratum_eq_firstPoleSet hlam]
-  constructor
-  · rintro ⟨n, hn⟩
-    exact ⟨n, hn.symm⟩
-  · rintro ⟨n, hn⟩
-    exact ⟨n, hn.symm⟩
 
 theorem notMem_first_stratum_of_lambda_eq_zero {m : Nat} (P : ConcreteStratification m)
     (hlam : P.lambda1 = 0) (τ : ℂ) :
@@ -2447,15 +2094,6 @@ theorem gate_blowsUpAt_of_mem_stratum {m : Nat} (P : ConcreteStratification m)
     {j : Nat} (hj : j < m) {τ : ℂ} (hτ : τ ∈ P.S j) :
     BlowsUpAt (P.s j) τ :=
   (P.stratpole hj hτ).gate_blowsUpAt
-
-theorem lastlayer_formula {m : Nat} (P : ConcreteStratification m) (τ : ℂ) :
-    P.observable τ =
-      P.lastLayer.base + ∑ i ∈ Finset.range m, P.s i τ * P.lastLayer.coeff i τ :=
-  P.lastLayer.formula τ
-
-theorem lastlayer_split {m : Nat} (P : ConcreteStratification (m + 1)) (τ : ℂ) :
-    P.observable τ = P.lastLayer.lower τ + P.s m τ * P.lastLayer.coeff m τ :=
-  P.lastLayer.formula_last τ
 
 theorem lower_lastlayer_puncturedBounded {m : Nat} (P : ConcreteStratification (m + 1))
     {τ : ℂ}

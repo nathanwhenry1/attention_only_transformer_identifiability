@@ -361,30 +361,6 @@ theorem Fobs_apply_eq_Frec_apply_of_pos {d L : ℕ} (r : ℕ) (hr : 0 < r)
     Fobs r θ w v τ i = Frec r θ w v τ i :=
   congrFun (Fobs_eq_Frec_of_pos r hr θ w v hτ) i
 
-/-- Convert equality of the closed-form path recursion on a positive real tail into
-equality of the transformer observables on that tail. -/
-theorem Fobs_eq_of_Frec_eq_on_tail {d L : ℕ} (r : ℕ) (hr : 0 < r)
-    {θ θ' : Params L d} (w v : Fin d → ℝ) {T0 : ℝ} (hT0 : 0 ≤ T0)
-    (hrec : ∀ τ : ℝ, T0 < τ → Frec r θ w v τ = Frec r θ' w v τ) :
-    ∀ τ : ℝ, T0 < τ → Fobs r θ w v τ = Fobs r θ' w v τ := by
-  intro τ hτ
-  have hτpos : 0 < τ := lt_of_le_of_lt hT0 hτ
-  rw [Fobs_eq_Frec_of_pos r hr θ w v hτpos,
-    Fobs_eq_Frec_of_pos r hr θ' w v hτpos]
-  exact hrec τ hτ
-
-/-- Coordinate version of `Fobs_eq_of_Frec_eq_on_tail`. -/
-theorem Fobs_apply_eq_of_Frec_apply_eq_on_tail {d L : ℕ} (r : ℕ) (hr : 0 < r)
-    {θ θ' : Params L d} (w v : Fin d → ℝ) {T0 : ℝ} (hT0 : 0 ≤ T0)
-    (i : Fin d)
-    (hrec : ∀ τ : ℝ, T0 < τ → Frec r θ w v τ i = Frec r θ' w v τ i) :
-    ∀ τ : ℝ, T0 < τ → Fobs r θ w v τ i = Fobs r θ' w v τ i := by
-  intro τ hτ
-  have hτpos : 0 < τ := lt_of_le_of_lt hT0 hτ
-  rw [Fobs_apply_eq_Frec_apply_of_pos r hr θ w v hτpos i,
-    Fobs_apply_eq_Frec_apply_of_pos r hr θ' w v hτpos i]
-  exact hrec τ hτ
-
 /-! ## Formal stream evaluators
 
 The TeX proof uses vector-valued polynomials in formal gate variables
@@ -521,28 +497,12 @@ noncomputable def formalFactorPoly {K d : ℕ}
     (j : Nat) : Matrix (Fin d) (Fin d) (GatePoly K) :=
   matPolyC (skipB (θ j).1) - gateVar K j • matPolyC (θ j).1
 
-/-- Polynomial version of `formalBprod`. -/
-noncomputable def formalBprodPoly {K d : ℕ}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    Nat → Matrix (Fin d) (Fin d) (GatePoly K)
-  | 0 => 1
-  | n + 1 => matPolyC (skipB (θ n).1) * formalBprodPoly θ n
-
 /-- Polynomial version of `formalW`. -/
 noncomputable def formalWPoly {K d : ℕ}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
     Nat → Matrix (Fin d) (Fin d) (GatePoly K)
   | 0 => 1
   | n + 1 => formalFactorPoly θ n * formalWPoly θ n
-
-/-- Polynomial version of `formalT`. -/
-noncomputable def formalTPoly {K d : ℕ}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    Nat → Matrix (Fin d) (Fin d) (GatePoly K)
-  | 0 => 0
-  | n + 1 =>
-      matPolyC (skipB (θ n).1) * formalTPoly θ n
-        + gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n)
 
 /-- Polynomial version of `formalWVec`. -/
 noncomputable def formalWVecPoly {K d : ℕ}
@@ -597,13 +557,6 @@ theorem eval_matrix_mul {K m n o : ℕ} (x : Fin K → ℂ)
   ext i j
   simp [Matrix.mul_apply]
 
-theorem eval_matrix_add {K m n : ℕ} (x : Fin K → ℂ)
-    (A B : Matrix (Fin m) (Fin n) (GatePoly K)) :
-    (A + B).map (MvPolynomial.eval x) =
-      A.map (MvPolynomial.eval x) + B.map (MvPolynomial.eval x) := by
-  ext i j
-  simp
-
 theorem eval_matrix_sub {K m n : ℕ} (x : Fin K → ℂ)
     (A B : Matrix (Fin m) (Fin n) (GatePoly K)) :
     (A - B).map (MvPolynomial.eval x) =
@@ -640,22 +593,6 @@ theorem eval_formalFactorPoly {K d : ℕ}
   rw [formalFactorPoly, formalFactor, eval_matrix_sub, eval_matPolyC,
     eval_matrix_smul, eval_gateVar, eval_matPolyC]
 
-theorem eval_formalBprodPoly {K d : ℕ}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    ∀ (n : Nat) (x : Fin K → ℂ),
-      (formalBprodPoly θ n).map (MvPolynomial.eval x) = formalBprod θ n := by
-  intro n
-  induction n with
-  | zero =>
-      intro x
-      simp [formalBprodPoly, formalBprod]
-  | succ n ih =>
-      intro x
-      change (matPolyC (skipB (θ n).1) * formalBprodPoly θ n).map
-          (MvPolynomial.eval x) =
-        matC (skipB (θ n).1) * formalBprod θ n
-      rw [eval_matrix_mul, eval_matPolyC, ih]
-
 theorem eval_formalWPoly {K d : ℕ}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
     ∀ (n : Nat) (x : Fin K → ℂ),
@@ -671,27 +608,6 @@ theorem eval_formalWPoly {K d : ℕ}
       change (formalFactorPoly θ n * formalWPoly θ n).map (MvPolynomial.eval x) =
         formalFactor θ (extendGate x) n * formalW θ n (extendGate x)
       rw [eval_matrix_mul, eval_formalFactorPoly, ih]
-
-theorem eval_formalTPoly {K d : ℕ}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    ∀ (n : Nat) (x : Fin K → ℂ),
-      (formalTPoly θ n).map (MvPolynomial.eval x) =
-        formalT θ n (extendGate x) := by
-  intro n
-  induction n with
-  | zero =>
-      intro x
-      simp [formalTPoly, formalT]
-  | succ n ih =>
-      intro x
-      change
-        (matPolyC (skipB (θ n).1) * formalTPoly θ n
-            + gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n)).map
-            (MvPolynomial.eval x) =
-          matC (skipB (θ n).1) * formalT θ n (extendGate x)
-            + extendGate x n • (matC (θ n).1 * formalW θ n (extendGate x))
-      rw [eval_matrix_add, eval_matrix_mul, eval_matPolyC, ih,
-        eval_matrix_smul, eval_gateVar, eval_matrix_mul, eval_matPolyC, eval_formalWPoly]
 
 theorem eval_formalWVecPoly {K d : ℕ}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
@@ -838,14 +754,6 @@ theorem formalPhi_zero {d : ℕ}
     (z : Nat → ℂ) (w v : Fin d → ℝ) :
     formalPhi θ 0 z w v = vecC w ⬝ᵥ (matC (θ 0).2 *ᵥ vecC v) := by
   simp [formalPhi, formalWVec]
-
-/-- At the first layer, the formal slope is the complexification of the real bilinear
-slope `w^T A_0 v`. -/
-theorem formalPhi_zero_eq_real_slope {d : ℕ}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (z : Nat → ℂ) (w v : Fin d → ℝ) :
-    formalPhi θ 0 z w v = (w ⬝ᵥ (θ 0).2.mulVec v : ℝ) := by
-  simp [formalPhi_zero, vecC, matC, Matrix.mulVec, dotProduct]
 
 theorem formalPhi_eq_Bprod_T {d : ℕ}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
@@ -1071,16 +979,6 @@ theorem vectorDegreeLe_vecPolyC {K d : Nat} (j : Fin K) (v : Fin d → ℝ) :
   intro i
   simp [vecPolyC]
 
-theorem matrixDegreeLe_add {K m n : Nat} {j : Fin K} {N : Nat}
-    {A B : Matrix (Fin m) (Fin n) (GatePoly K)}
-    (hA : MatrixDegreeLe j N A) (hB : MatrixDegreeLe j N B) :
-    MatrixDegreeLe j N (A + B) := by
-  intro i k
-  exact (MvPolynomial.degreeOf_add_le j (A i k) (B i k)).trans (by
-    have ha := hA i k
-    have hb := hB i k
-    omega)
-
 theorem matrixDegreeLe_sub {K m n : Nat} {j : Fin K} {N : Nat}
     {A B : Matrix (Fin m) (Fin n) (GatePoly K)}
     (hA : MatrixDegreeLe j N A) (hB : MatrixDegreeLe j N B) :
@@ -1192,24 +1090,6 @@ theorem matrixDegreeLe_formalFactorPoly_zero_of_ne {K d : Nat}
     (matrixDegreeLe_matPolyC j (θ n).1)
   simpa using hsmul
 
-theorem matrixDegreeLe_formalBprodPoly_zero {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    ∀ (n : Nat) (j : Fin K), MatrixDegreeLe j 0 (formalBprodPoly θ n) := by
-  intro n
-  induction n with
-  | zero =>
-      intro j i k
-      by_cases hik : i = k
-      · subst k
-        simp [formalBprodPoly, Matrix.one_apply_eq]
-      · simp [formalBprodPoly, Matrix.one_apply_ne hik]
-  | succ n ih =>
-      intro j
-      change MatrixDegreeLe j 0 (matPolyC (skipB (θ n).1) * formalBprodPoly θ n)
-      simpa using matrixDegreeLe_mul
-        (j := j) (N := 0) (M := 0)
-        (matrixDegreeLe_matPolyC j (skipB (θ n).1)) (ih j)
-
 theorem matrixDegreeLe_formalWPoly_zero_of_le {K d : Nat}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
     ∀ (n : Nat) (j : Fin K), n ≤ (j : Nat) →
@@ -1260,71 +1140,6 @@ theorem matrixDegreeLe_formalWPoly_one {K d : Nat}
         have hmul := matrixDegreeLe_mul
           (j := j) (N := 0) (M := 1) hF0 (ih j)
         simpa [Nat.zero_add] using hmul
-
-theorem matrixDegreeLe_formalTPoly_zero_of_le {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    ∀ (n : Nat) (j : Fin K), n ≤ (j : Nat) →
-      MatrixDegreeLe j 0 (formalTPoly θ n) := by
-  intro n
-  induction n with
-  | zero =>
-      intro j _ i k
-      simp [formalTPoly]
-  | succ n ih =>
-      intro j hle
-      change MatrixDegreeLe j 0
-        (matPolyC (skipB (θ n).1) * formalTPoly θ n
-          + gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n))
-      have hjn : (j : Nat) ≠ n := by omega
-      refine matrixDegreeLe_add ?_ ?_
-      · simpa using matrixDegreeLe_mul
-          (j := j) (N := 0) (M := 0)
-          (matrixDegreeLe_matPolyC j (skipB (θ n).1)) (ih j (by omega))
-      · have hinner := matrixDegreeLe_mul
-          (j := j) (N := 0) (M := 0)
-          (matrixDegreeLe_matPolyC j (θ n).1)
-          (matrixDegreeLe_formalWPoly_zero_of_le θ n j (by omega))
-        simpa using matrixDegreeLe_smul
-          (j := j) (N := 0) (M := 0)
-          (by simp [degreeOf_gateVar_eq_zero_of_ne j hjn]) hinner
-
-theorem matrixDegreeLe_formalTPoly_one {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ) :
-    ∀ (n : Nat) (j : Fin K), MatrixDegreeLe j 1 (formalTPoly θ n) := by
-  intro n
-  induction n with
-  | zero =>
-      intro j i k
-      simp [formalTPoly]
-  | succ n ih =>
-      intro j
-      change MatrixDegreeLe j 1
-        (matPolyC (skipB (θ n).1) * formalTPoly θ n
-          + gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n))
-      refine matrixDegreeLe_add ?_ ?_
-      · have hmul := matrixDegreeLe_mul
-          (j := j) (N := 0) (M := 1)
-          (matrixDegreeLe_matPolyC j (skipB (θ n).1)) (ih j)
-        simpa [Nat.zero_add] using hmul
-      · by_cases hjn : (j : Nat) = n
-        · have hinner := matrixDegreeLe_mul
-            (j := j) (N := 0) (M := 0)
-            (matrixDegreeLe_matPolyC j (θ n).1)
-            (matrixDegreeLe_formalWPoly_zero_of_le θ n j (by omega))
-          have hsmul := matrixDegreeLe_smul
-            (j := j) (N := 1) (M := 0)
-            (degreeOf_gateVar_le_one j n) hinner
-          simpa using hsmul
-        · have hinner := matrixDegreeLe_mul
-            (j := j) (N := 0) (M := 1)
-            (matrixDegreeLe_matPolyC j (θ n).1)
-            (matrixDegreeLe_formalWPoly_one θ n j)
-          have hdeg : MvPolynomial.degreeOf j (gateVar K n) ≤ 0 := by
-            rw [degreeOf_gateVar_eq_zero_of_ne j hjn]
-          have hsmul := matrixDegreeLe_smul
-            (j := j) (N := 0) (M := 1)
-            hdeg hinner
-          simpa [Nat.zero_add] using hsmul
 
 theorem vectorDegreeLe_formalWVecPoly_one {K d : Nat}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
@@ -1477,12 +1292,6 @@ theorem coeffVector_apply {K n : Nat} (a : Fin K →₀ Nat)
     (v : Fin n → GatePoly K) (i : Fin n) :
     coeffVector a v i = MvPolynomial.coeff a (v i) := rfl
 
-theorem coeffMatrix_add {K m n : Nat} (a : Fin K →₀ Nat)
-    (A B : Matrix (Fin m) (Fin n) (GatePoly K)) :
-    coeffMatrix a (A + B) = coeffMatrix a A + coeffMatrix a B := by
-  ext i j
-  simp [MvPolynomial.coeff_add]
-
 theorem coeffMatrix_sub {K m n : Nat} (a : Fin K →₀ Nat)
     (A B : Matrix (Fin m) (Fin n) (GatePoly K)) :
     coeffMatrix a (A - B) = coeffMatrix a A - coeffMatrix a B := by
@@ -1494,21 +1303,6 @@ theorem coeffVector_add {K n : Nat} (a : Fin K →₀ Nat)
     coeffVector a (u + v) = coeffVector a u + coeffVector a v := by
   funext i
   simp [MvPolynomial.coeff_add]
-
-theorem coeffVector_sub {K n : Nat} (a : Fin K →₀ Nat)
-    (u v : Fin n → GatePoly K) :
-    coeffVector a (u - v) = coeffVector a u - coeffVector a v := by
-  funext i
-  simp [MvPolynomial.coeff_sub]
-
-theorem coeffMatrix_const_mul {K d o : Nat} (a : Fin K →₀ Nat)
-    (A : Matrix (Fin d) (Fin d) ℝ) (B : Matrix (Fin d) (Fin o) (GatePoly K)) :
-    coeffMatrix a (matPolyC A * B) = matC A * coeffMatrix a B := by
-  ext i k
-  change MvPolynomial.coeff a (∑ x, matPolyC A i x * B x k) =
-    ∑ x, matC A i x * MvPolynomial.coeff a (B x k)
-  rw [MvPolynomial.coeff_sum]
-  simp [matPolyC, matC, MvPolynomial.coeff_C_mul]
 
 theorem coeffVector_const_mulVec {K d : Nat} (a : Fin K →₀ Nat)
     (A : Matrix (Fin d) (Fin d) ℝ) (v : Fin d → GatePoly K) :
@@ -1654,10 +1448,6 @@ theorem gateTopSq_apply_lt {K n : Nat} {i : Fin K} (hi : (i : Nat) < n) :
 theorem gateTopSq_apply_ge {K n : Nat} {i : Fin K} (hi : n ≤ (i : Nat)) :
     gateTopSq K n i = 0 := by
   simp [gateTopSq, gateTop_apply_ge hi]
-
-theorem gateTopSq_zero (K : Nat) : gateTopSq K 0 = 0 := by
-  ext i
-  simp [gateTopSq, gateTop_zero]
 
 /-- If a monomial asks for more `j`-degree than `p` has, its coefficient is zero. -/
 theorem coeff_eq_zero_of_degreeOf_lt {K : Nat} {j : Fin K}
@@ -1808,38 +1598,6 @@ theorem coeffMatrix_formalWPoly_gateTop {K d : Nat}
       rw [formalFactorPoly, sub_mul, coeffMatrix_sub, hconst, hvar, ih (by omega)]
       simp [formalVprod_succ, pow_succ]
 
-theorem coeffMatrix_formalTPoly_gateTop_succ {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (n : Nat) (hnK : n + 1 ≤ K) :
-    coeffMatrix (gateTop K (n + 1)) (formalTPoly θ (n + 1)) =
-      ((-1 : ℂ) ^ n) • formalVprod θ (n + 1) := by
-  have hnlt : n < K := by omega
-  have hconst :
-      coeffMatrix (gateTop K (n + 1))
-          (matPolyC (skipB (θ n).1) * formalTPoly θ n) = 0 := by
-    refine coeffMatrix_eq_zero_of_matrixDegreeLe
-      (j := ⟨n, hnlt⟩) (N := 0) ?_ ?_
-    · exact matrixDegreeLe_mul
-        (j := ⟨n, hnlt⟩) (N := 0) (M := 0)
-        (matrixDegreeLe_matPolyC ⟨n, hnlt⟩ (skipB (θ n).1))
-        (matrixDegreeLe_formalTPoly_zero_of_le θ n ⟨n, hnlt⟩ (by rfl))
-    · have hval : ((⟨n, hnlt⟩ : Fin K) : Nat) < n + 1 := Nat.lt_succ_self n
-      simp [gateTop_apply_lt (K := K) (n := n + 1) (i := ⟨n, hnlt⟩) hval]
-  have hvar :
-      coeffMatrix (gateTop K (n + 1))
-          (gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n)) =
-        matC (θ n).1 * coeffMatrix (gateTop K n) (formalWPoly θ n) := by
-    rw [gateTop_succ_single_add hnlt]
-    rw [← Matrix.smul_mul]
-    exact coeffMatrix_gateVar_const_mul hnlt (gateTop K n) (θ n).1
-      (formalWPoly θ n)
-  change coeffMatrix (gateTop K (n + 1))
-      (matPolyC (skipB (θ n).1) * formalTPoly θ n
-        + gateVar K n • (matPolyC (θ n).1 * formalWPoly θ n)) =
-    ((-1 : ℂ) ^ n) • formalVprod θ (n + 1)
-  rw [coeffMatrix_add, hconst, hvar, coeffMatrix_formalWPoly_gateTop θ n (by omega)]
-  simp [formalVprod_succ]
-
 theorem coeffVector_formalWVecPoly_gateTop {K d : Nat}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
     (n : Nat) (hnK : n ≤ K) (w : Fin d → ℝ) :
@@ -1887,15 +1645,6 @@ theorem coeffVector_formalVisiblePoly_gateTop {K d : Nat}
   rw [formalVisiblePoly, coeffVector_const_mulVec,
     coeffVector_formalWVecPoly_gateTop θ n hnK]
   simp [formalVprod_succ, Matrix.mulVec_smul, Matrix.mulVec_mulVec]
-
-/-- Coordinate form of the top-coefficient formula for the visible polynomial. -/
-theorem coeff_formalVisiblePoly_gateTop_apply {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (n : Nat) (hnK : n ≤ K) (w : Fin d → ℝ) (i : Fin d) :
-    MvPolynomial.coeff (gateTop K n) (formalVisiblePoly θ n w i) =
-      ((-1 : ℂ) ^ n) * (formalVprod θ (n + 1) *ᵥ vecC w) i := by
-  have h := congrFun (coeffVector_formalVisiblePoly_gateTop θ n hnK w) i
-  simpa [Pi.smul_apply] using h
 
 theorem neg_one_pow_succ_mul_self (n : Nat) :
     ((-1 : ℂ) ^ (n + 1)) * ((-1 : ℂ) ^ n) = -1 := by
@@ -1982,14 +1731,6 @@ theorem coeff_formalLastSqCoeffPoly_gateTopSq {K d : Nat}
       (j := j) (N := 0) (M := 1)
       (matrixDegreeLe_matPolyC j (θ (n + 1)).2)
       hinner
-
-theorem coeff_formalPhiPoly_gateTopSq_succ_eq_lastSqCoeff_top {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (n : Nat) (hnK : n + 1 ≤ K) (w v : Fin d → ℝ) :
-    MvPolynomial.coeff (gateTopSq K (n + 1)) (formalPhiPoly θ (n + 1) w v) =
-      MvPolynomial.coeff (gateTopSq K n) (formalLastSqCoeffPoly θ n w) := by
-  rw [coeff_formalPhiPoly_gateTopSq_succ θ n hnK,
-    coeff_formalLastSqCoeffPoly_gateTopSq θ n (by omega)]
 
 /-- Full coefficient-family bridge for the last gate squared in `formalPhiPoly`. -/
 theorem coeff_formalPhiPoly_lastSqCoeffPoly_succ {K d : Nat}
@@ -2087,45 +1828,5 @@ theorem coeff_formalPhiPoly_lastSqCoeffPoly_succ {K d : Nat}
     simpa [m, z, r] using
       coeff_gateVar_sq_mul (K := K) (n := n) hnK a (U ⬝ᵥ (A *ᵥ U))]
   simp [formalLastSqCoeffPoly, U, A, Wn]
-
-theorem coeff_formalWPoly_eq_zero_of_one_lt {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    {m : Fin K →₀ Nat} {j : Fin K} (n : Nat) (i k : Fin d)
-    (h : 1 < m j) :
-    MvPolynomial.coeff m (formalWPoly θ n i k) = 0 := by
-  exact coeff_eq_zero_of_degreeOf_lt (j := j) (m := m)
-    (by
-      have hdeg := matrixDegreeLe_formalWPoly_one θ n j i k
-      omega)
-
-theorem coeff_formalTPoly_eq_zero_of_one_lt {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    {m : Fin K →₀ Nat} {j : Fin K} (n : Nat) (i k : Fin d)
-    (h : 1 < m j) :
-    MvPolynomial.coeff m (formalTPoly θ n i k) = 0 := by
-  exact coeff_eq_zero_of_degreeOf_lt (j := j) (m := m)
-    (by
-      have hdeg := matrixDegreeLe_formalTPoly_one θ n j i k
-      omega)
-
-theorem coeff_formalPhiPoly_eq_zero_of_two_lt {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    {m : Fin K →₀ Nat} {j : Fin K} (n : Nat) (w v : Fin d → ℝ)
-    (h : 2 < m j) :
-    MvPolynomial.coeff m (formalPhiPoly θ n w v) = 0 := by
-  exact coeff_eq_zero_of_degreeOf_lt (j := j) (m := m)
-    (by
-      have hdeg := degreeOf_formalPhiPoly_le_two θ n j w v
-      omega)
-
-theorem coeff_formalVisiblePoly_eq_zero_of_one_lt {K d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    {m : Fin K →₀ Nat} {j : Fin K} (n : Nat) (w : Fin d → ℝ) (i : Fin d)
-    (h : 1 < m j) :
-    MvPolynomial.coeff m (formalVisiblePoly θ n w i) = 0 := by
-  exact coeff_eq_zero_of_degreeOf_lt (j := j) (m := m)
-    (by
-      have hdeg := degreeOf_formalVisiblePoly_le_one θ n j w i
-      omega)
 
 end TransformerIdentifiability.NLayer

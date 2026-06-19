@@ -42,12 +42,6 @@ def const (a : ℝ) : EventuallyBoundedReal (fun _ : ℝ => a) :=
     intro τ _hτ
     rfl)
 
-/-- A global absolute-value bound is an eventual bound. -/
-def of_forall_abs_le {f : ℝ -> ℝ} {R : ℝ} (hR : 0 ≤ R)
-    (h : ∀ τ : ℝ, |f τ| ≤ R) :
-    EventuallyBoundedReal f :=
-  of_bound R hR 0 (fun τ _hτ => h τ)
-
 /-- Pointwise equal functions share eventual boundedness. -/
 def congr_of_forall_eq {f g : ℝ -> ℝ}
     (h : EventuallyBoundedReal f) (hfg : ∀ τ : ℝ, f τ = g τ) :
@@ -55,19 +49,6 @@ def congr_of_forall_eq {f g : ℝ -> ℝ}
   of_bound h.radius h.radius_nonneg h.start (by
     intro τ hτ
     simpa [← hfg τ] using h.bound τ hτ)
-
-/-- Eventually equal functions share eventual boundedness. -/
-noncomputable def congr_of_eventually_eq {f g : ℝ -> ℝ}
-    (h : EventuallyBoundedReal f) (hfg : ∀ᶠ τ : ℝ in atTop, f τ = g τ) :
-    EventuallyBoundedReal g := by
-  let T := Classical.choose (eventually_atTop.1 hfg)
-  have hT : ∀ τ : ℝ, T ≤ τ -> f τ = g τ :=
-    Classical.choose_spec (eventually_atTop.1 hfg)
-  refine of_bound h.radius h.radius_nonneg (max h.start T) ?_
-  intro τ hτ
-  have hτ_start : h.start ≤ τ := le_trans (le_max_left _ _) hτ
-  have hτ_T : T ≤ τ := le_trans (le_max_right _ _) hτ
-  simpa [← hT τ hτ_T] using h.bound τ hτ_start
 
 /-- Negating an eventually bounded function preserves eventual boundedness. -/
 def neg {f : ℝ -> ℝ} (h : EventuallyBoundedReal f) :
@@ -383,31 +364,11 @@ structure EventuallyBoundedProbePair {d : Nat} (P : ℝ -> ProbePair d) where
 
 namespace EventuallyBoundedProbePair
 
-/-- Constructor from componentwise bounds for two vector-valued paths. -/
-def of_components {d : Nat} {w v : ℝ -> Fin d -> ℝ}
-    (hw : ∀ i : Fin d, EventuallyBoundedReal (fun τ => w τ i))
-    (hv : ∀ i : Fin d, EventuallyBoundedReal (fun τ => v τ i)) :
-    EventuallyBoundedProbePair (fun τ => (w τ, v τ)) where
-  fst := hw
-  snd := hv
-
 /-- Constant probe paths are eventually bounded. -/
 def const {d : Nat} (p : ProbePair d) :
     EventuallyBoundedProbePair (fun _ : ℝ => p) where
   fst i := EventuallyBoundedReal.const (p.1 i)
   snd i := EventuallyBoundedReal.const (p.2 i)
-
-/-- First-vector coordinate projection from an eventually bounded probe path. -/
-def fst_coord {d : Nat} {P : ℝ -> ProbePair d}
-    (hP : EventuallyBoundedProbePair P) (i : Fin d) :
-    EventuallyBoundedReal (fun τ => (P τ).1 i) :=
-  hP.fst i
-
-/-- Second-vector coordinate projection from an eventually bounded probe path. -/
-def snd_coord {d : Nat} {P : ℝ -> ProbePair d}
-    (hP : EventuallyBoundedProbePair P) (i : Fin d) :
-    EventuallyBoundedReal (fun τ => (P τ).2 i) :=
-  hP.snd i
 
 /-- Bounded probe paths have bounded matrix-bilinear slopes. -/
 noncomputable def matrixBilin {d : Nat} (A : Matrix (Fin d) (Fin d) ℝ)
@@ -473,84 +434,7 @@ noncomputable def eventuallyExpClose_delta_of_eventual_lipschitz
 
 namespace CascadeAlphaDeltaEstimateData
 
-/-- A packaged scalar delta estimate plus exponential closeness of the driving gate
-gives exponential closeness of the displayed delta. -/
-noncomputable def eventuallyExpClose {gate : ℝ -> ℝ} {limit : ℝ}
-    {actual formal : ℝ -> ℝ}
-    (D : CascadeAlphaDeltaEstimateData gate limit actual formal)
-    (hgate : EventuallyExpClose gate limit) :
-    EventuallyExpClose (fun τ => actual τ - formal τ) 0 :=
-  eventuallyExpClose_delta_of_eventual_lipschitz
-    (x := gate) (delta := fun τ => actual τ - formal τ)
-    (a := limit) (K := D.lipschitzConstant) (T := D.start)
-    hgate D.lipschitz_nonneg D.delta_bound
-
 end CascadeAlphaDeltaEstimateData
-
-/-- One-coordinate delta estimate: if two assignments eventually agree off coordinate
-`i`, and the scalar output is eventually Lipschitz in coordinate `i`, exponential
-closeness of that coordinate difference gives exponential closeness of the output
-difference. -/
-noncomputable def eventuallyExpClose_delta_of_single_coordinate
-    {ι : Type*} {F : (ι -> ℝ) -> ℝ} {x y : ℝ -> ι -> ℝ} {i : ι}
-    {K T : ℝ}
-    (hxy : EventuallyExpClose (fun τ => x τ i - y τ i) 0)
-    (hK : 0 ≤ K)
-    (heq : ∀ᶠ τ : ℝ in atTop, ∀ j : ι, j ≠ i -> x τ j = y τ j)
-    (hLip :
-      ∀ τ : ℝ, T ≤ τ ->
-        (∀ j : ι, j ≠ i -> x τ j = y τ j) ->
-        |F (x τ) - F (y τ)| ≤ K * |x τ i - y τ i|) :
-    EventuallyExpClose (fun τ => F (x τ) - F (y τ)) 0 := by
-  let Teq := Classical.choose (eventually_atTop.1 heq)
-  have hTeq : ∀ τ : ℝ, Teq ≤ τ -> ∀ j : ι, j ≠ i -> x τ j = y τ j :=
-    Classical.choose_spec (eventually_atTop.1 heq)
-  exact
-    eventuallyExpClose_delta_of_eventual_lipschitz
-      (x := fun τ => x τ i - y τ i)
-      (delta := fun τ => F (x τ) - F (y τ))
-      (a := 0) (K := K) (T := max T Teq)
-      hxy hK (by
-        intro τ hτ
-        have hτ_T : T ≤ τ := le_trans (le_max_left _ _) hτ
-        have hτ_eq : Teq ≤ τ := le_trans (le_max_right _ _) hτ
-        simpa [sub_zero] using hLip τ hτ_T (hTeq τ hτ_eq))
-
-/-- Specialized-`Phi` single-gate delta API.  The analytic work is isolated in the
-explicit `hLip` hypothesis: callers only need to prove a finite polynomial Lipschitz
-bound for the displayed coordinate and path. -/
-noncomputable def eventuallyExpClose_specializedPhi_singleGate_delta_of_lipschitz
-    {L d : Nat} (θ : Params L d) (level coord : Nat)
-    (base : Nat -> ℂ) (path : ℝ -> ProbePair d)
-    {gate : ℝ -> ℝ} {a K T : ℝ}
-    (hgate : EventuallyExpClose gate a) (hK : 0 ≤ K)
-    (hLip :
-      ∀ τ : ℝ, T ≤ τ ->
-        |(specializedPhi θ level
-            (fun n => if n = coord then (gate τ : ℂ) else base n)
-            (path τ)).re -
-          (specializedPhi θ level
-            (fun n => if n = coord then (a : ℂ) else base n)
-            (path τ)).re| ≤ K * |gate τ - a|) :
-    EventuallyExpClose
-      (fun τ =>
-        (specializedPhi θ level
-          (fun n => if n = coord then (gate τ : ℂ) else base n)
-          (path τ)).re -
-        (specializedPhi θ level
-          (fun n => if n = coord then (a : ℂ) else base n)
-          (path τ)).re)
-      0 :=
-  eventuallyExpClose_delta_of_eventual_lipschitz
-    (x := gate)
-    (delta := fun τ =>
-      (specializedPhi θ level
-        (fun n => if n = coord then (gate τ : ℂ) else base n)
-        (path τ)).re -
-      (specializedPhi θ level
-        (fun n => if n = coord then (a : ℂ) else base n)
-        (path τ)).re)
-    (a := a) (K := K) (T := T) hgate hK hLip
 
 /-! ## Polynomial one-coordinate Lipschitz constants -/
 

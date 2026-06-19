@@ -51,13 +51,6 @@ theorem noAccumIn {S : Nat -> Set ℂ} {H s : Nat -> ℂ -> ℂ} {m j : Nat}
     NoAccumIn (S j) (partialUnion S j)ᶜ :=
   h.strata.noAccumIn j hj
 
-/-- Points of a stratum lie in the regular domain before that stratum. -/
-theorem mem_regular_of_mem_stratum {S : Nat -> Set ℂ} {H s : Nat -> ℂ -> ℂ}
-    {m j : Nat} (h : SigmoidStratification S H s m) (hj : j < m)
-    {τ : ℂ} (hτ : τ ∈ S j) :
-    τ ∉ partialUnion S j :=
-  h.regular j hj hτ
-
 /-- Formula for a gate as the sigmoid of its preactivation. -/
 theorem gate_formula {S : Nat -> Set ℂ} {H s : Nat -> ℂ -> ℂ} {m j : Nat}
     (h : SigmoidStratification S H s m) (hj : j < m) :

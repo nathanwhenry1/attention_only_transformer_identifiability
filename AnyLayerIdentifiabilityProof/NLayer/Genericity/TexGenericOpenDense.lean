@@ -193,24 +193,4 @@ theorem dense_TexGenericSet_of_texAnchorCertificate_open_dense
       rw [TexGenericSet_succ_succ_eq L d]
       exact hmatrixTailDense.inter_of_isOpen_left hcertificateDense hmatrixTailOpen
 
-/-- The exact target density statement without a positive-dimension hypothesis is false. -/
-theorem TexGenericSet_one_zero_eq_empty : TexGenericSet 1 0 = ∅ := by
-  ext θ
-  constructor
-  · intro hθ
-    have hbase : TexGenericBaseClauses 0 θ := hθ
-    have hzero : (paramStream θ 0).1 = 0 := by
-      ext i j
-      exact Fin.elim0 i
-    exact False.elim (hbase.value_ne_zero hzero)
-  · intro hθ
-    exact False.elim hθ
-
-/-- Consequently, `Dense (TexGenericSet 1 0)` cannot be exported. -/
-theorem not_dense_TexGenericSet_one_zero : ¬ Dense (TexGenericSet 1 0) := by
-  intro hdense
-  have hmem := hdense (fun _ : Fin 1 => ((0 : Matrix (Fin 0) (Fin 0) ℝ), 0))
-  rw [TexGenericSet_one_zero_eq_empty] at hmem
-  simp at hmem
-
 end TransformerIdentifiability.NLayer

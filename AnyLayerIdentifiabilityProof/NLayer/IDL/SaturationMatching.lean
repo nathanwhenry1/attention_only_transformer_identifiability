@@ -43,13 +43,6 @@ theorem slope_eq (D : FirstLayerEndpointData A A' targetValue)
     matrixBilin A w v = matrixBilin A' w v := by
   rw [D.attention_eq]
 
-/-- Coordinate-probe form of `slope_eq`. -/
-theorem basis_slope_eq (D : FirstLayerEndpointData A A' targetValue)
-    (i j : Fin d) :
-    matrixBilin A (Pi.single i 1) (Pi.single j 1) =
-      matrixBilin A' (Pi.single i 1) (Pi.single j 1) :=
-  D.slope_eq (Pi.single i 1) (Pi.single j 1)
-
 /-- Constructor from an already identified first attention matrix and a nonzero target
 value matrix. -/
 def of_attention_eq (hA : A = A') (hTarget : targetValue ≠ 0) :
@@ -57,32 +50,7 @@ def of_attention_eq (hA : A = A') (hTarget : targetValue ≠ 0) :
   attention_eq := hA
   targetValue_ne_zero := hTarget
 
-/-- Constructor from the all-probe first-slope equality endpoint. -/
-def of_all_probe_slope_eq
-    (hSlope : ∀ w v : Fin d -> ℝ, matrixBilin A w v = matrixBilin A' w v)
-    (hTarget : targetValue ≠ 0) :
-    FirstLayerEndpointData A A' targetValue where
-  attention_eq := A1_eq_of_all_probe_slope_eq hSlope
-  targetValue_ne_zero := hTarget
-
-/-- Pair-valued probe constructor for callers carrying probes as `(w, v)`. -/
-def of_pair_probe_slope_eq
-    (hSlope :
-      ∀ p : (Fin d -> ℝ) × (Fin d -> ℝ),
-        matrixBilin A p.1 p.2 = matrixBilin A' p.1 p.2)
-    (hTarget : targetValue ≠ 0) :
-    FirstLayerEndpointData A A' targetValue :=
-  of_all_probe_slope_eq (fun w v => hSlope (w, v)) hTarget
-
 end FirstLayerEndpointData
-
-/-- Top-level constructor spelling for the first-layer endpoint package. -/
-def firstLayerEndpointData_of_all_probe_slope_eq {d : Nat}
-    {A A' targetValue : Matrix (Fin d) (Fin d) ℝ}
-    (hSlope : ∀ w v : Fin d -> ℝ, matrixBilin A w v = matrixBilin A' w v)
-    (hTarget : targetValue ≠ 0) :
-    FirstLayerEndpointData A A' targetValue :=
-  FirstLayerEndpointData.of_all_probe_slope_eq hSlope hTarget
 
 /-! ## First-layer geometry and dial paths -/
 
@@ -103,37 +71,6 @@ def QuadricProbeSliceQuadraticCoefficientSeparation {d : Nat}
     (∀ p : ProbePair d, p ∈ Uq →
       p.1 ⬝ᵥ (X *ᵥ p.2) + p.1 ⬝ᵥ (Y *ᵥ p.1) = 0) →
     ∃ c : ℝ, X = c • A ∧ Y + Yᵀ = 0
-
-/-- On the full nonsingular first-layer quadric, quadratic coefficient separation holds:
-the bilinear coefficient is a scalar multiple of `A`, and the pure quadratic coefficient
-has zero symmetric part. -/
-theorem quadricProbeSliceQuadraticCoefficientSeparation_firstLayerQuadric
-    {d : Nat} {A : Matrix (Fin d) (Fin d) ℝ}
-    (hd : 2 ≤ d) (hdet : A.det ≠ 0) :
-    QuadricProbeSliceQuadraticCoefficientSeparation A {p | firstLayerQuadric A p} := by
-  intro X Y hvanish
-  have hYquad : ∀ w : Fin d -> ℝ, w ⬝ᵥ (Y *ᵥ w) = 0 := by
-    intro w
-    have hp : ((w, 0) : ProbePair d) ∈ ({p | firstLayerQuadric A p} : Set (ProbePair d)) := by
-      simp [firstLayerQuadric, matrixBilin]
-    have h := hvanish ((w, 0) : ProbePair d) hp
-    simpa using h
-  have hYsym : Y + Yᵀ = 0 :=
-    matrix_symPart_eq_zero_of_forall_quadratic_eq_zero hYquad
-  have hXquad :
-      ∀ w v : Fin d -> ℝ,
-        matrixBilin A w v = 0 -> matrixBilin X w v = 0 := by
-    intro w v hquad
-    have hp : ((w, v) : ProbePair d) ∈ ({p | firstLayerQuadric A p} : Set (ProbePair d)) := by
-      simpa [firstLayerQuadric] using hquad
-    have h := hvanish ((w, v) : ProbePair d) hp
-    have hYw := hYquad w
-    have hX : w ⬝ᵥ (X *ᵥ v) = 0 := by
-      linarith
-    simpa [matrixBilin] using hX
-  rcases matrix_eq_smul_of_forall_bilin_eq_zero_on_quadric hd hdet hXquad with
-    ⟨c, hc⟩
-  exact ⟨c, hc, hYsym⟩
 
 /-- The vector `π(w,v)=A^T w - A v` from the sign-region and dial-path argument. -/
 noncomputable def firstLayerPi {d : Nat} (A : Matrix (Fin d) (Fin d) ℝ)
@@ -166,11 +103,6 @@ noncomputable def specializedPhi {L d : Nat} (θ : Params L d) (n : Nat)
     (z : Nat -> ℂ) (p : ProbePair d) : ℂ :=
   formalPhi (paramStream θ) n z p.1 p.2
 
-/-- The first sigmoid gate associated to a chosen first attention matrix and bias. -/
-noncomputable def firstGateOfMatrix {d : Nat} (A : Matrix (Fin d) (Fin d) ℝ)
-    (b : ℝ) (p : ProbePair d) (τ : ℝ) : ℝ :=
-  sig (τ * matrixBilin A p.1 p.2 + b)
-
 /-- Explicit inverse coordinate for the real sigmoid on `(0, 1)`. -/
 noncomputable def sigmoidLogit (t : ℝ) : ℝ :=
   Real.log (t / (1 - t))
@@ -187,23 +119,9 @@ theorem sig_sigmoidLogit {t : ℝ} (ht_pos : 0 < t) (ht_lt_one : t < 1) :
   field_simp [ht_ne, hden_ne]
   ring
 
-/-- Equality of first attention matrices gives equality of first gates along every
-probe path. -/
-theorem firstGateOfMatrix_eq_of_attention_eq {d : Nat}
-    {A A' : Matrix (Fin d) (Fin d) ℝ} {b : ℝ}
-    (hA : A = A') (p : ProbePair d) (τ : ℝ) :
-    firstGateOfMatrix A b p τ = firstGateOfMatrix A' b p τ := by
-  rw [hA]
-
 namespace FirstLayerEndpointData
 
 variable {d : Nat} {A A' targetValue : Matrix (Fin d) (Fin d) ℝ}
-
-/-- Endpoint data identifies the first gate for the two first attention matrices. -/
-theorem firstGate_eq (D : FirstLayerEndpointData A A' targetValue)
-    (b : ℝ) (p : ProbePair d) (τ : ℝ) :
-    firstGateOfMatrix A b p τ = firstGateOfMatrix A' b p τ :=
-  firstGateOfMatrix_eq_of_attention_eq D.attention_eq p τ
 
 /-- Positive-depth wrapper: endpoint equality of `firstAttention` unfolds to equality
 of the concrete first-layer attention matrices. -/
@@ -238,13 +156,6 @@ noncomputable def dialV {d : Nat} (p : ProbePair d) (c : ℝ)
 noncomputable def dialProbe {d : Nat} (p : ProbePair d) (c : ℝ)
     (y : Fin d -> ℝ) (τ : ℝ) : ProbePair d :=
   (dialW p c y τ, dialV p c y τ)
-
-/-- Along a dial path the sum `w(τ)+v(τ)` is constant. -/
-theorem dial_sum {d : Nat} (p : ProbePair d) (c : ℝ)
-    (y : Fin d -> ℝ) (τ : ℝ) :
-    dialW p c y τ + dialV p c y τ = p.1 + p.2 := by
-  funext i
-  simp [dialW, dialV]
 
 /-- Dot product against a matrix-vector product can be transposed to the other vector. -/
 theorem dotProduct_mulVec_eq_dotProduct_transpose_mulVec {d : Nat}
@@ -321,18 +232,6 @@ variable {d : Nat} {A : Matrix (Fin d) (Fin d) ℝ} {b : ℝ}
 /-- Pair-valued path associated to packaged dial data. -/
 noncomputable def probe (D : DialPathData A b) (τ : ℝ) : ProbePair d :=
   dialProbe D.base D.c D.y τ
-
-/-- The packaged path keeps `w+v` fixed. -/
-theorem sum_eq (D : DialPathData A b) (τ : ℝ) :
-    (D.probe τ).1 + (D.probe τ).2 = D.base.1 + D.base.2 :=
-  dial_sum D.base D.c D.y τ
-
-/-- Restatement of the exact dial identity for the packaged path. -/
-theorem first_gate_argument_identity (D : DialPathData A b)
-    {τ : ℝ} (hτ : τ ≠ 0) :
-    τ * matrixBilin A (D.probe τ).1 (D.probe τ).2 + b =
-      D.c + b - D.c ^ 2 * matrixBilin A D.y D.y / τ := by
-  simpa [probe, dialProbe] using D.exact_identity τ hτ
 
 /-- Canonical dial path through a regular point of the first-layer quadric and a
 target first-gate value `t ∈ (0, 1)`. -/
@@ -435,98 +334,6 @@ theorem t_lt_one (S : SignRegionData θ' O A b) {x : ProbePair d × ℝ}
 theorem pi_ne_zero (S : SignRegionData θ' O A b) {x : ProbePair d × ℝ}
     (hx : x ∈ S.U) : firstLayerPi A x.1 ≠ 0 :=
   (S.point_regular x hx).2.2
-
-/-- If a product box is contained in a subset of the sign region, any point of the box
-is a sign-region point.  This accessor is useful after `product_neighborhood` has chosen
-`Uq × J` inside a trichotomy component. -/
-theorem product_mem_sign_region
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    (p, t) ∈ S.U :=
-  hU0_subset (hproduct_subset ⟨hp, ht⟩)
-
-/-- Product-box points inherit the quadric condition from the ambient sign region. -/
-theorem product_point_on_quadric
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    firstLayerQuadric A p := by
-  simpa using
-    S.point_on_quadric (p, t)
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht)
-
-/-- Product-box points inherit regularity from the ambient sign region. -/
-theorem product_point_regular
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    firstLayerRegular A p := by
-  simpa using
-    S.point_regular (p, t)
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht)
-
-/-- Product-box points project to probes in the base open set. -/
-theorem product_point_mem_base
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    p ∈ O := by
-  simpa using
-    S.point_mem_base (p, t)
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht)
-
-/-- Product-box first-gate parameters stay in the interval `(0, 1)`. -/
-theorem product_t_pos
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    0 < t := by
-  simpa using
-    S.t_pos
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht)
-
-/-- Product-box first-gate parameters stay below `1`. -/
-theorem product_t_lt_one
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J) :
-    t < 1 := by
-  simpa using
-    S.t_lt_one
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht)
-
-/-- Product-box points inherit primed tail positivity from the ambient sign region. -/
-theorem product_primed_positive
-    (S : SignRegionData θ' O A b)
-    {U0 : Set (ProbePair d × ℝ)} {Uq : Set (ProbePair d)} {J : Set ℝ}
-    (hU0_subset : U0 ⊆ S.U)
-    (hproduct_subset :
-      {x : ProbePair d × ℝ | x.1 ∈ Uq ∧ x.2 ∈ J} ⊆ U0)
-    {p : ProbePair d} {t : ℝ} (hp : p ∈ Uq) (ht : t ∈ J)
-    {n : Nat} (hn_pos : 1 ≤ n) (hn_lt : n < L) :
-    0 < (specializedPhi θ' n (gateAssignmentOneTail t) p).re := by
-  simpa using
-    S.primed_positive (p, t)
-      (S.product_mem_sign_region hU0_subset hproduct_subset hp ht) n hn_pos hn_lt
 
 end SignRegionData
 

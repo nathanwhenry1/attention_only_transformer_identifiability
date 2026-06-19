@@ -52,56 +52,11 @@ theorem mono (hs : IsOpenDense s) (hst : s ⊆ t) (ht : IsOpen t) :
     IsOpenDense t :=
   ⟨ht, hs.dense.mono hst⟩
 
-/-- A finite intersection of open dense sets is open dense. -/
-theorem finset_biInter {α : Type*} [DecidableEq α] (u : Finset α) (f : α -> Set X)
-    (h : ∀ i ∈ u, IsOpenDense (f i)) :
-    IsOpenDense (⋂ i ∈ u, f i) := by
-  constructor
-  · exact isOpen_biInter_finset fun i hi => (h i hi).isOpen
-  · induction u using Finset.induction_on with
-    | empty =>
-        simp
-    | insert a u ha ih =>
-        have hu : ∀ i ∈ u, IsOpenDense (f i) := fun i hi =>
-          h i (Finset.mem_insert_of_mem hi)
-        have htail : Dense (⋂ i ∈ u, f i) := ih hu
-        have hmain : Dense (f a ∩ ⋂ i ∈ u, f i) :=
-          (h a (Finset.mem_insert_self a u)).dense.inter_of_isOpen_left htail
-            (h a (Finset.mem_insert_self a u)).isOpen
-        have hset :
-            (⋂ i ∈ insert a u, f i) = f a ∩ ⋂ i ∈ u, f i := by
-          ext x
-          constructor
-          · intro hx
-            refine ⟨Set.mem_iInter.mp (Set.mem_iInter.mp hx a)
-                (Finset.mem_insert_self a u), ?_⟩
-            simp only [Set.mem_iInter]
-            intro i hi
-            exact Set.mem_iInter.mp (Set.mem_iInter.mp hx i)
-              (Finset.mem_insert_of_mem hi)
-          · rintro ⟨hxa, hxu⟩
-            simp only [Set.mem_iInter]
-            intro i hi
-            rcases Finset.mem_insert.mp hi with rfl | hiu
-            · exact hxa
-            · exact Set.mem_iInter.mp (Set.mem_iInter.mp hxu i) hiu
-        simpa [hset] using hmain
-
 /-- Preimage transport for maps that are continuous and open. -/
 theorem preimage {f : X -> Y} {s : Set Y} (hs : IsOpenDense s)
     (hf_cont : Continuous f) (hf_open : IsOpenMap f) :
     IsOpenDense (f ⁻¹' s) :=
   ⟨hs.isOpen.preimage hf_cont, hs.dense.preimage hf_open⟩
-
-/-- Restrict an open dense set to an open subtype. -/
-theorem subtype_preimage {O s : Set X} (hO : IsOpen O) (hs : IsOpenDense s) :
-    IsOpenDense (((↑) : O -> X) ⁻¹' s) :=
-  hs.preimage continuous_subtype_val hO.isOpenMap_subtype_val
-
-/-- Homeomorphism preimage transport for open dense sets. -/
-theorem homeomorph_preimage {s : Set Y} (e : X ≃ₜ Y) (hs : IsOpenDense s) :
-    IsOpenDense (e ⁻¹' s) :=
-  hs.preimage e.continuous e.isOpenMap
 
 /-- An open dense set meets every nonempty open set. -/
 theorem inter_open_nonempty (hs : IsOpenDense s) {U : Set X}
@@ -157,11 +112,6 @@ def toAnchorGenericData {L d : Nat} {s : Set (Params L d)} (h : IsOpenDense s) :
 end IsOpenDense
 
 namespace AnchorGenericData
-
-/-- Convert upstream packaged generic data to the local `IsOpenDense` predicate. -/
-theorem isOpenDense {L d : Nat} (G : AnchorGenericData L d) :
-    IsOpenDense G.carrier :=
-  ⟨G.isOpen, G.dense⟩
 
 /-- Build upstream generic data from the local `IsOpenDense` predicate. -/
 def ofIsOpenDense {L d : Nat} (s : Set (Params L d)) (h : IsOpenDense s) :
@@ -348,21 +298,6 @@ def toOStarGenericAssumptions
   OStarGenericAssumptions.ofMatrixNonzero hOpenO hNonemptyO
     D.firstAttention_ne_zero D.g2_kappa D.g2_visible
 
-/-- The TeX matrix-level clauses give nonemptiness of `O_star` on any open nonempty
-base probe set. -/
-theorem oStar_nonempty
-    (D : TexGenericStepClauses L d tailGeneric certificate θ)
-    {O : Set (ProbePair d)} (hOpenO : IsOpen O) (hNonemptyO : O.Nonempty) :
-    (O_star θ O).Nonempty :=
-  O_star_nonempty_of_generic (D.toOStarGenericAssumptions hOpenO hNonemptyO)
-
-/-- The same bridge exposes the open `O_star` fact already proved in the Step 1 shard. -/
-theorem oStar_isOpen
-    (D : TexGenericStepClauses L d tailGeneric certificate θ)
-    {O : Set (ProbePair d)} (hOpenO : IsOpen O) (hNonemptyO : O.Nonempty) :
-    IsOpen (O_star θ O) :=
-  O_star_isOpen_of_generic (D.toOStarGenericAssumptions hOpenO hNonemptyO)
-
 end TexGenericStepClauses
 
 /-- Exact recursive TeX genericity predicate `𝓖^(L)` from Definition `generic`.
@@ -425,16 +360,6 @@ theorem probeObservableAgreement_of_fullTransformerAgreement {L d r : Nat}
   intro w v τ hτ
   funext i
   simp [Fobs, h (probeInput r w v τ)]
-
-/-- Global positive-ray probe agreement supplies the constant-probe tail-agreement
-interface consumed by the Step 1 endpoint, with threshold `0`. -/
-def constantProbeTailAgreement_of_probeObservableAgreement {L d r : Nat}
-    {θ θ' : Params L d} (h : ProbeObservableAgreement r θ θ') :
-    ConstantProbeTailAgreement r L d θ θ' where
-  T0 := 0
-  eqOnTail := by
-    intro p τ hτ
-    exact h p.1 p.2 τ hτ
 
 /-- Packaged main-theorem interface: outside a supplied open dense generic set, probe
 agreement identifies the parameters.  Later null-set/algebraic work can refine the

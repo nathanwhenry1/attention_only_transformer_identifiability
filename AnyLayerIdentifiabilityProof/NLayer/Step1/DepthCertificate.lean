@@ -29,24 +29,10 @@ def TargetValueNoDepthDrop {L d : Nat} (θ θ' : Params L d)
     (targetValue : Matrix (Fin d) (Fin d) ℝ) : Prop :=
   Step1Conclusion θ θ' -> targetValue = 0 -> False
 
-/-- The no-depth-drop obligation specialized to the abstract first value matrix. -/
-def FirstValueNoDepthDrop {L d : Nat} (θ θ' : Params L d) : Prop :=
-  TargetValueNoDepthDrop θ θ' (firstValue θ)
-
 /-- The no-depth-drop obligation specialized to the concrete first layer value matrix. -/
 def FirstLayerValueNoDepthDrop {L d : Nat} (θ θ' : Params L d)
     (hL : 0 < L) : Prop :=
   TargetValueNoDepthDrop θ θ' (θ ⟨0, hL⟩).1
-
-/-- Convert a concrete first-layer no-depth-drop obligation to the first-value form. -/
-theorem FirstLayerValueNoDepthDrop.to_firstValue {L d : Nat} {θ θ' : Params L d}
-    {hL : 0 < L} (h : FirstLayerValueNoDepthDrop θ θ' hL) :
-    FirstValueNoDepthDrop θ θ' := by
-  intro hStep hzero
-  apply h hStep
-  calc
-    (θ ⟨0, hL⟩).1 = firstValue θ := (firstValue_eq_of_pos θ hL).symm
-    _ = 0 := hzero
 
 namespace FixedOStarProbe
 
@@ -287,13 +273,6 @@ def ofTargetValue {L d : Nat} {θ θ' : Params L d}
   step1_eq := step1_eq
   no_depth_drop := no_depth_drop
 
-/-- Constructor specialized to `firstValue θ`. -/
-noncomputable def ofFirstValue {L d : Nat} {θ θ' : Params L d}
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ') :
-    DepthCertificateData θ θ' :=
-  ofTargetValue (θ := θ) (θ' := θ') (firstValue θ) rfl step1_eq no_depth_drop
-
 /-- Constructor specialized to the concrete first layer value matrix. -/
 noncomputable def ofFirstLayerValue {L d : Nat} {θ θ' : Params L d}
     (hL : 0 < L) (step1_eq : Step1Conclusion θ θ')
@@ -301,23 +280,6 @@ noncomputable def ofFirstLayerValue {L d : Nat} {θ θ' : Params L d}
     DepthCertificateData θ θ' :=
   ofTargetValue (θ := θ) (θ' := θ') (θ ⟨0, hL⟩).1
     (firstValue_eq_of_pos θ hL).symm step1_eq no_depth_drop
-
-/-- Constructor spelling for callers holding the unfolded first-attention equality. -/
-noncomputable def ofFirstAttentionEq {L d : Nat} {θ θ' : Params L d}
-    (step1_eq : firstAttention θ = firstAttention θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ') :
-    DepthCertificateData θ θ' :=
-  ofFirstValue (θ := θ) (θ' := θ') step1_eq no_depth_drop
-
-/-- Build a depth certificate from a concrete Step 1 theorem and standing assumptions,
-leaving only the transformer-specific no-depth-drop obligation. -/
-noncomputable def ofConcreteStep1 {r L d : Nat} {O : Set (ProbePair d)}
-    {θ θ' : Params L d}
-    (step1_theorem : ConcreteStep1TheoremStatement r L d O θ θ')
-    (standing : Step1StandingAssumptions r L d O θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ') :
-    DepthCertificateData θ θ' :=
-  ofFirstValue (θ := θ) (θ' := θ') (step1_theorem standing) no_depth_drop
 
 /-- Concrete Step 1 constructor using the positive-depth first-layer matrix as the target. -/
 noncomputable def ofConcreteStep1FirstLayer {r L d : Nat} {O : Set (ProbePair d)}
@@ -328,12 +290,6 @@ noncomputable def ofConcreteStep1FirstLayer {r L d : Nat} {O : Set (ProbePair d)
     DepthCertificateData θ θ' :=
   ofFirstLayerValue (θ := θ) (θ' := θ') standing.depth_pos
     (step1_theorem standing) no_depth_drop
-
-/-- View the stored equality as the local `Step1Conclusion` interface. -/
-theorem step1Conclusion {L d : Nat} {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') :
-    Step1Conclusion θ θ' :=
-  D.step1_eq
 
 /-- Contradiction form of the packaged target-value no-depth-drop field. -/
 theorem targetValue_eq_zero_absurd {L d : Nat} {θ θ' : Params L d}
@@ -356,12 +312,6 @@ theorem firstValue_eq_zero_absurd {L d : Nat} {θ θ' : Params L d}
     D.targetValue = firstValue θ := D.targetValue_eq_firstValue
     _ = 0 := hzero
 
-/-- The first value matrix is nonzero. -/
-theorem firstValue_ne_zero {L d : Nat} {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') :
-    firstValue θ ≠ 0 := by
-  exact D.firstValue_eq_zero_absurd
-
 /-- Positive-depth contradiction wrapper for the concrete first layer projection. -/
 theorem firstLayerValue_eq_zero_absurd {L d : Nat} {θ θ' : Params L d}
     (D : DepthCertificateData θ θ') (hL : 0 < L)
@@ -372,26 +322,7 @@ theorem firstLayerValue_eq_zero_absurd {L d : Nat} {θ θ' : Params L d}
     firstValue θ = (θ ⟨0, hL⟩).1 := firstValue_eq_of_pos θ hL
     _ = 0 := hzero
 
-/-- Positive-depth wrapper for the concrete first layer projection. -/
-theorem firstLayerValue_ne_zero {L d : Nat} {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') (hL : 0 < L) :
-    (θ ⟨0, hL⟩).1 ≠ 0 := by
-  exact D.firstLayerValue_eq_zero_absurd hL
-
 end DepthCertificateData
-
-/-- Direct contradiction form of the compiled depth certificate. -/
-theorem firstValue_eq_zero_absurd_of_depth_certificate {L d : Nat}
-    {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') (hzero : firstValue θ = 0) :
-    False :=
-  D.firstValue_eq_zero_absurd hzero
-
-/-- Direct theorem form of the compiled depth certificate. -/
-theorem firstValue_ne_zero_of_depth_certificate {L d : Nat} {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') :
-    firstValue θ ≠ 0 :=
-  D.firstValue_ne_zero
 
 /-- Direct positive-depth contradiction wrapper for the concrete first layer value
 matrix. -/
@@ -401,99 +332,6 @@ theorem firstLayerValue_eq_zero_absurd_of_depth_certificate {L d : Nat}
     (hzero : (θ ⟨0, hL⟩).1 = 0) :
     False :=
   D.firstLayerValue_eq_zero_absurd hL hzero
-
-/-- Direct positive-depth theorem for the concrete first layer value matrix. -/
-theorem firstLayerValue_ne_zero_of_depth_certificate {L d : Nat}
-    {θ θ' : Params L d}
-    (D : DepthCertificateData θ θ') (hL : 0 < L) :
-    (θ ⟨0, hL⟩).1 ≠ 0 :=
-  D.firstLayerValue_ne_zero hL
-
-/-- Direct contradiction from a Step 1 conclusion and first-value no-depth-drop
-obligation. -/
-theorem firstValue_eq_zero_absurd_of_step1Conclusion_noDepthDrop {L d : Nat}
-    {θ θ' : Params L d}
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ')
-    (hzero : firstValue θ = 0) :
-    False :=
-  no_depth_drop step1_eq hzero
-
-/-- Direct endpoint from a Step 1 conclusion and first-value no-depth-drop obligation. -/
-theorem firstValue_ne_zero_of_step1Conclusion_noDepthDrop {L d : Nat}
-    {θ θ' : Params L d}
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ') :
-    firstValue θ ≠ 0 := by
-  intro hzero
-  exact firstValue_eq_zero_absurd_of_step1Conclusion_noDepthDrop
-    step1_eq no_depth_drop hzero
-
-/-- Direct concrete first-layer contradiction from a Step 1 conclusion and first-layer
-no-depth-drop obligation. -/
-theorem firstLayerValue_eq_zero_absurd_of_step1Conclusion_noDepthDrop {L d : Nat}
-    {θ θ' : Params L d} (hL : 0 < L)
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' hL)
-    (hzero : (θ ⟨0, hL⟩).1 = 0) :
-    False :=
-  no_depth_drop step1_eq hzero
-
-/-- Direct concrete first-layer endpoint from a Step 1 conclusion and first-layer
-no-depth-drop obligation. -/
-theorem firstLayerValue_ne_zero_of_step1Conclusion_noDepthDrop {L d : Nat}
-    {θ θ' : Params L d} (hL : 0 < L)
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' hL) :
-    (θ ⟨0, hL⟩).1 ≠ 0 := by
-  intro hzero
-  exact firstLayerValue_eq_zero_absurd_of_step1Conclusion_noDepthDrop
-    hL step1_eq no_depth_drop hzero
-
-/-- Direct first-value contradiction when the no-depth-drop contradiction is stated for
-the concrete first layer. -/
-theorem firstValue_eq_zero_absurd_of_step1Conclusion_firstLayerNoDepthDrop
-    {L d : Nat} {θ θ' : Params L d} (hL : 0 < L)
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' hL)
-    (hzero : firstValue θ = 0) :
-    False :=
-  firstValue_eq_zero_absurd_of_step1Conclusion_noDepthDrop step1_eq
-    no_depth_drop.to_firstValue hzero
-
-/-- Direct first-value endpoint when the no-depth-drop contradiction is stated for
-the concrete first layer. -/
-theorem firstValue_ne_zero_of_step1Conclusion_firstLayerNoDepthDrop {L d : Nat}
-    {θ θ' : Params L d} (hL : 0 < L)
-    (step1_eq : Step1Conclusion θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' hL) :
-    firstValue θ ≠ 0 :=
-  firstValue_eq_zero_absurd_of_step1Conclusion_firstLayerNoDepthDrop hL
-    step1_eq no_depth_drop
-
-/-- Direct contradiction from a concrete Step 1 theorem statement, standing
-assumptions, and the first-value no-depth-drop obligation. -/
-theorem firstValue_eq_zero_absurd_of_concrete_step1_noDepthDrop {r L d : Nat}
-    {O : Set (ProbePair d)} {θ θ' : Params L d}
-    (step1_theorem : ConcreteStep1TheoremStatement r L d O θ θ')
-    (standing : Step1StandingAssumptions r L d O θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ')
-    (hzero : firstValue θ = 0) :
-    False :=
-  firstValue_eq_zero_absurd_of_depth_certificate
-    (DepthCertificateData.ofConcreteStep1 step1_theorem standing no_depth_drop)
-    hzero
-
-/-- Direct endpoint from a concrete Step 1 theorem statement, standing assumptions,
-and the first-value no-depth-drop obligation. -/
-theorem firstValue_ne_zero_of_concrete_step1_noDepthDrop {r L d : Nat}
-    {O : Set (ProbePair d)} {θ θ' : Params L d}
-    (step1_theorem : ConcreteStep1TheoremStatement r L d O θ θ')
-    (standing : Step1StandingAssumptions r L d O θ θ')
-    (no_depth_drop : FirstValueNoDepthDrop θ θ') :
-    firstValue θ ≠ 0 :=
-  firstValue_eq_zero_absurd_of_concrete_step1_noDepthDrop
-    step1_theorem standing no_depth_drop
 
 /-- Direct concrete first-layer contradiction from a concrete Step 1 theorem statement,
 standing assumptions, and the positive-depth no-depth-drop obligation. -/
@@ -518,31 +356,6 @@ theorem firstLayerValue_ne_zero_of_concrete_step1_noDepthDrop {r L d : Nat}
     (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' standing.depth_pos) :
     (θ ⟨0, standing.depth_pos⟩).1 ≠ 0 :=
   firstLayerValue_eq_zero_absurd_of_concrete_step1_noDepthDrop
-    step1_theorem standing no_depth_drop
-
-/-- First-value contradiction from a concrete Step 1 theorem when the no-depth-drop
-contradiction is stated for the concrete first layer. -/
-theorem firstValue_eq_zero_absurd_of_concrete_step1_firstLayerNoDepthDrop
-    {r L d : Nat} {O : Set (ProbePair d)} {θ θ' : Params L d}
-    (step1_theorem : ConcreteStep1TheoremStatement r L d O θ θ')
-    (standing : Step1StandingAssumptions r L d O θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' standing.depth_pos)
-    (hzero : firstValue θ = 0) :
-    False :=
-  firstValue_eq_zero_absurd_of_depth_certificate
-    (DepthCertificateData.ofConcreteStep1FirstLayer step1_theorem standing
-      no_depth_drop)
-    hzero
-
-/-- First-value endpoint from a concrete Step 1 theorem when the no-depth-drop
-contradiction is stated for the concrete first layer. -/
-theorem firstValue_ne_zero_of_concrete_step1_firstLayerNoDepthDrop {r L d : Nat}
-    {O : Set (ProbePair d)} {θ θ' : Params L d}
-    (step1_theorem : ConcreteStep1TheoremStatement r L d O θ θ')
-    (standing : Step1StandingAssumptions r L d O θ θ')
-    (no_depth_drop : FirstLayerValueNoDepthDrop θ θ' standing.depth_pos) :
-    firstValue θ ≠ 0 :=
-  firstValue_eq_zero_absurd_of_concrete_step1_firstLayerNoDepthDrop
     step1_theorem standing no_depth_drop
 
 end TransformerIdentifiability.NLayer

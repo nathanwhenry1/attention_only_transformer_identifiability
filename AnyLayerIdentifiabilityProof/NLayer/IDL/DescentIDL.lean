@@ -48,27 +48,6 @@ theorem eq_of_headLayer_tail_eq {L d : Nat} {θ θ' : Params (L + 1) d}
   · intro j
     exact congrFun htail j
 
-/-- Componentwise form of `eq_of_headLayer_tail_eq`. -/
-theorem eq_of_headValue_headAttention_tail_eq {L d : Nat}
-    {θ θ' : Params (L + 1) d}
-    (hvalue : headValue θ = headValue θ')
-    (hattention : headAttention θ = headAttention θ')
-    (htail : tail θ = tail θ') :
-    θ = θ' :=
-  eq_of_headLayer_tail_eq (Prod.ext hvalue hattention) htail
-
-/-- Equality of positive-depth parameters gives equality of their tails. -/
-theorem tail_eq_of_eq {L d : Nat} {θ θ' : Params (L + 1) d}
-    (h : θ = θ') :
-    tail θ = tail θ' := by
-  rw [h]
-
-/-- Equality of positive-depth parameters gives equality of their first layers. -/
-theorem headLayer_eq_of_eq {L d : Nat} {θ θ' : Params (L + 1) d}
-    (h : θ = θ') :
-    headLayer θ = headLayer θ' := by
-  rw [h]
-
 end Params
 
 /-! ## Constructor-friendly `ID_L` endpoint wrappers -/
@@ -95,15 +74,6 @@ theorem params_eq (D : HeadTailIdentificationData θ θ') :
     θ = θ' :=
   Params.eq_of_headLayer_tail_eq D.headLayer_eq D.tail_eq
 
-/-- Build head/tail identification data from equality of the whole first layer and tail. -/
-def ofHeadLayerTailEq
-    (hhead : Params.headLayer θ = Params.headLayer θ')
-    (htail : Params.tail θ = Params.tail θ') :
-    HeadTailIdentificationData θ θ' where
-  headValue_eq := congrArg Prod.fst hhead
-  headAttention_eq := congrArg Prod.snd hhead
-  tail_eq := htail
-
 /-- Build head/tail identification data from the three component obligations usually
 left at the end of the `ID_L` induction step. -/
 def ofComponentEq
@@ -116,16 +86,6 @@ def ofComponentEq
   tail_eq := htail
 
 end HeadTailIdentificationData
-
-/-- Direct endpoint for the `ID_L` stitch step once the first value, first attention, and
-tail parameter families have been identified. -/
-theorem params_eq_of_headValue_headAttention_tail {L d : Nat}
-    {θ θ' : Params (L + 1) d}
-    (hvalue : Params.headValue θ = Params.headValue θ')
-    (htail : Params.tail θ = Params.tail θ')
-    (hattention : Params.headAttention θ = Params.headAttention θ') :
-    θ = θ' :=
-  (HeadTailIdentificationData.ofComponentEq hvalue htail hattention).params_eq
 
 /-! ## First-layer effective paths -/
 
@@ -277,27 +237,6 @@ def ofComponentEq
 
 end FirstLayerMatchedData
 
-/-- Top-level endpoint for Step 3 once matching has supplied the first value equality
-and the tail induction has supplied tail equality. -/
-theorem params_eq_of_firstLayerMatched_tail {L d : Nat}
-    {θ θ' : Params (L + 1) d}
-    (matching : FirstLayerMatchedData θ θ')
-    (htail : Params.tail θ = Params.tail θ') :
-    θ = θ' :=
-  matching.params_eq htail
-
-/-- Top-level constructor that consumes the `SaturationMatching` endpoint directly. -/
-theorem params_eq_of_firstLayerEndpoint_headValue_tail {L d : Nat}
-    {θ θ' : Params (L + 1) d}
-    (endpoint :
-      FirstLayerEndpointData (Params.headAttention θ) (Params.headAttention θ')
-        (Params.headValue θ))
-    (hvalue : Params.headValue θ = Params.headValue θ')
-    (htail : Params.tail θ = Params.tail θ') :
-    θ = θ' :=
-  params_eq_of_firstLayerMatched_tail
-    (FirstLayerMatchedData.ofEndpointAndHeadValueEq endpoint hvalue) htail
-
 /-- The generic `(G3)` first-skip determinant condition transfers from the primed first
 value matrix to the matched unprimed first value matrix. -/
 theorem headValueSkip_det_ne_zero_of_matching
@@ -447,17 +386,6 @@ theorem params_eq (D : IDLInductionAssemblyData θ θ') :
     θ = θ' :=
   D.matching.params_eq D.tail_eq
 
-/-- Constructor from matching plus a lower-depth theorem stated as an abstract
-tail-property eliminator. -/
-def ofTailProperty {TailHyp : Params L d -> Params L d -> Prop}
-    (matching : FirstLayerMatchedData θ θ')
-    (tail_hyp : TailHyp (Params.tail θ) (Params.tail θ'))
-    (tail_eq_of_hyp :
-      ∀ η η' : Params L d, TailHyp η η' -> η = η') :
-    IDLInductionAssemblyData θ θ' where
-  matching := matching
-  tail_eq := tail_eq_of_hyp (Params.tail θ) (Params.tail θ') tail_hyp
-
 end IDLInductionAssemblyData
 
 /-- The `ID_L` stitch step: matching identifies the first layer and the induction
@@ -467,18 +395,6 @@ theorem IDL_induction_step {L d : Nat} {θ θ' : Params (L + 1) d}
     (htail : Params.tail θ = Params.tail θ') :
     θ = θ' :=
   (IDLInductionAssemblyData.mk matching htail).params_eq
-
-/-- The same induction step when the tail equality is obtained from a lower-depth
-inductive theorem. -/
-theorem IDL_induction_step_of_tail_property {L d : Nat}
-    {TailHyp : Params L d -> Params L d -> Prop}
-    {θ θ' : Params (L + 1) d}
-    (matching : FirstLayerMatchedData θ θ')
-    (tail_hyp : TailHyp (Params.tail θ) (Params.tail θ'))
-    (tail_eq_of_hyp :
-      ∀ η η' : Params L d, TailHyp η η' -> η = η') :
-    θ = θ' :=
-  (IDLInductionAssemblyData.ofTailProperty matching tail_hyp tail_eq_of_hyp).params_eq
 
 /-- The depth-one stitch endpoint.  The analytic one-layer pole-transfer argument is
 still responsible for constructing `FirstLayerMatchedData`; once it does, there is no
@@ -492,32 +408,6 @@ theorem IDL_base_of_firstLayerMatched {d : Nat} {θ θ' : Params 1 d}
 
 /-! ## N-layer induction assembly wrappers -/
 
-/-- Constructor spelling for the positive-depth `ID_L` assembly package. -/
-def IDL_nLayer_assembly_data {L d : Nat} {θ θ' : Params (L + 1) d}
-    (matching : FirstLayerMatchedData θ θ')
-    (htail : Params.tail θ = Params.tail θ') :
-    IDLInductionAssemblyData θ θ' :=
-  IDLInductionAssemblyData.mk matching htail
-
-/-- Compile a packaged n-layer `ID_L` assembly to parameter equality. -/
-theorem IDL_nLayer_assembly_params_eq {L d : Nat}
-    {θ θ' : Params (L + 1) d}
-    (D : IDLInductionAssemblyData θ θ') :
-    θ = θ' :=
-  D.params_eq
-
-/-- Constructor spelling for the n-layer assembly when the tail is identified by an
-abstract lower-depth property. -/
-def IDL_nLayer_assembly_data_of_tail_property {L d : Nat}
-    {TailHyp : Params L d -> Params L d -> Prop}
-    {θ θ' : Params (L + 1) d}
-    (matching : FirstLayerMatchedData θ θ')
-    (tail_hyp : TailHyp (Params.tail θ) (Params.tail θ'))
-    (tail_eq_of_hyp :
-      ∀ η η' : Params L d, TailHyp η η' -> η = η') :
-    IDLInductionAssemblyData θ θ' :=
-  IDLInductionAssemblyData.ofTailProperty matching tail_hyp tail_eq_of_hyp
-
 /-- N-layer wrapper around the `ID_L` induction step. -/
 theorem IDL_nLayer_induction_step {L d : Nat}
     {θ θ' : Params (L + 1) d}
@@ -525,17 +415,6 @@ theorem IDL_nLayer_induction_step {L d : Nat}
     (htail : Params.tail θ = Params.tail θ') :
     θ = θ' :=
   IDL_induction_step matching htail
-
-/-- N-layer wrapper around the tail-property form of the `ID_L` induction step. -/
-theorem IDL_nLayer_induction_step_of_tail_property {L d : Nat}
-    {TailHyp : Params L d -> Params L d -> Prop}
-    {θ θ' : Params (L + 1) d}
-    (matching : FirstLayerMatchedData θ θ')
-    (tail_hyp : TailHyp (Params.tail θ) (Params.tail θ'))
-    (tail_eq_of_hyp :
-      ∀ η η' : Params L d, TailHyp η η' -> η = η') :
-    θ = θ' :=
-  IDL_induction_step_of_tail_property matching tail_hyp tail_eq_of_hyp
 
 /-- N-layer wrapper around the depth-one stitch endpoint. -/
 theorem IDL_nLayer_depth_one_stitch {d : Nat} {θ θ' : Params 1 d}

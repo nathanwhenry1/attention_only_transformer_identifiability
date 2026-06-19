@@ -77,18 +77,6 @@ theorem ext {L d : Nat} {θ θ' : Params L d}
   funext l
   exact layer_eq_of_valueMatrix_attentionMatrix_eq l (hvalue l) (hattention l)
 
-/-- Equality of parameters gives equality of value matrices at every layer. -/
-theorem valueMatrix_eq_of_eq {L d : Nat} {θ θ' : Params L d}
-    (h : θ = θ') (l : Fin L) :
-    valueMatrix θ l = valueMatrix θ' l := by
-  rw [h]
-
-/-- Equality of parameters gives equality of attention matrices at every layer. -/
-theorem attentionMatrix_eq_of_eq {L d : Nat} {θ θ' : Params L d}
-    (h : θ = θ') (l : Fin L) :
-    attentionMatrix θ l = attentionMatrix θ' l := by
-  rw [h]
-
 end Params
 
 /-- The depth-`L` network, applying the first layer and then recursing on the tail. -/
@@ -100,19 +88,6 @@ noncomputable def transformer {d T : Nat} :
 @[simp] theorem transformer_zero {d T : Nat} (θ : Params 0 d)
     (X : Matrix (Fin d) (Fin T) Real) :
     transformer θ X = X :=
-  rfl
-
-/-- Unfolding the depth-`L+1` transformer at its first layer. -/
-theorem transformer_succ_eq {L d T : Nat} (θ : Params (L + 1) d)
-    (X : Matrix (Fin d) (Fin T) Real) :
-    transformer θ X = transformer (Fin.tail θ) (attnLayer (θ 0).1 (θ 0).2 X) :=
-  rfl
-
-/-- Unfolding the depth-`L+1` transformer using the named layer projections. -/
-theorem transformer_succ_eq_params {L d T : Nat} (θ : Params (L + 1) d)
-    (X : Matrix (Fin d) (Fin T) Real) :
-    transformer θ X = transformer (Fin.tail θ)
-      (attnLayer (Params.valueMatrix θ 0) (Params.attentionMatrix θ 0) X) :=
   rfl
 
 /-- Give matrices the product Lebesgue measure-space structure. -/

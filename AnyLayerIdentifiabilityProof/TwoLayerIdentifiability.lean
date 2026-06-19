@@ -2182,12 +2182,6 @@ theorem tokenC_analyticAt_ofReal (lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : 
     analyticAt_const.add (analyticAt_const.mul hzc)
   simpa [tokenC] using ha.add (houter.mul hg)
 
-/-- A continuous complex visible factor nonzero at `ζ` is nonzero near `ζ`. -/
-theorem eventually_ne_zero_of_continuousAt_complex {amp : ℂ → ℂ} {ζ : ℂ}
-    (hamp : ContinuousAt amp ζ) (hamp0 : amp ζ ≠ 0) :
-    ∀ᶠ τ in nhds ζ, amp τ ≠ 0 := by
-  simpa using hamp.eventually_ne hamp0
-
 /-- **Step 1 (visible outer-pole accumulation).**  If `ρ` (the reciprocal of an outer-sigmoid
 argument) is analytic, vanishes at `ζ`, and is not locally constant, then every neighbourhood
 of `ζ` contains a point `τ ≠ ζ` with the visible multiplier nonzero and an outer sigmoid pole. -/
@@ -2295,19 +2289,6 @@ theorem tokenCnet_eventuallyEq_nhds_of_eq_on_pos {d : ℕ} (r : ℕ) (hr : 0 < r
     rw [frequently_nhdsWithin_iff]; exact hfreq_nhds
   exact (hf.frequently_eq_iff_eventually_eq hg).mp hfreq
 
-/-- **B2.**  If non-analytic points of `F` accumulate at `ζ`, then `F` is not
-meromorphic at `ζ`. -/
-theorem not_meromorphicAt_of_accumulating_not_analyticAt {F : ℂ → ℂ} {ζ : ℂ}
-    (hacc : ∀ U : Set ℂ, U ∈ nhds ζ → ∃ τ ∈ U, τ ≠ ζ ∧ ¬ AnalyticAt ℂ F τ) :
-    ¬ MeromorphicAt F ζ := by
-  intro hF
-  have hnear : {τ : ℂ | AnalyticAt ℂ F τ} ∈ nhdsWithin ζ ({ζ}ᶜ : Set ℂ) :=
-    hF.eventually_analyticAt
-  rw [mem_nhdsWithin_iff_exists_mem_nhds_inter] at hnear
-  obtain ⟨V, hV, hsub⟩ := hnear
-  obtain ⟨τ, hτV, hτne, hτbad⟩ := hacc V hV
-  exact hτbad (hsub ⟨hτV, by simpa using hτne⟩)
-
 /-- Local singularity mechanism for the outer sigmoid: if `F = A + D⁻¹G` near a point,
 `A,D,G` are analytic there, `D` has an isolated zero there, and `G` is nonzero there, then
 `F` cannot be analytic there. -/
@@ -2373,70 +2354,6 @@ theorem eventually_ne_zero_nhdsWithin_of_analyticAt_not_eventually_zero {D : ℂ
     ∀ᶠ z in nhdsWithin τ ({τ}ᶜ : Set ℂ), D z ≠ 0 :=
   hD.eventually_eq_zero_or_eventually_ne_zero.resolve_left hDne
 
-/-- Concrete local singularity lemma for the scalar token: at a regular point of the inner
-sigmoid, an isolated zero of the outer denominator with nonzero visible multiplier forces
-non-analyticity of the token coordinate. -/
-theorem tokenC_not_analyticAt_of_outer_denom_isolated_zero
-    (lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {τ : ℂ}
-    (hinner : 1 + Complex.exp (-((lam : ℂ) * τ + (b : ℂ))) ≠ 0)
-    (hpole : 1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ τ)) = 0)
-    (hamp : tokenVisibleAmp lam b G₀ G₁ τ ≠ 0)
-    (houter_isolated : ∀ᶠ z in nhdsWithin τ ({τ}ᶜ : Set ℂ),
-      1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z)) ≠ 0) :
-    ¬ AnalyticAt ℂ (tokenC lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) τ := by
-  have haff : AnalyticAt ℂ (fun z : ℂ => (lam : ℂ) * z + (b : ℂ)) τ :=
-    (analyticAt_const.mul analyticAt_id).add analyticAt_const
-  have hzc : AnalyticAt ℂ (fun z : ℂ => csig ((lam : ℂ) * z + (b : ℂ))) τ :=
-    AnalyticAt.comp_of_eq' (csig_analyticAt hinner) haff rfl
-  have hA : AnalyticAt ℂ
-      (fun z : ℂ => (A₀ : ℂ) + (A₁ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ))) τ :=
-    analyticAt_const.add (analyticAt_const.mul hzc)
-  have hG : AnalyticAt ℂ (tokenVisibleAmp lam b G₀ G₁) τ := by
-    simpa [tokenVisibleAmp] using analyticAt_const.add (analyticAt_const.mul hzc)
-  have hpsi : AnalyticAt ℂ (fun z : ℂ => (Ψ₀ : ℂ)
-      + (Ψ₁ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ))
-      + (Ψ₂ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ)) ^ 2) τ :=
-    (analyticAt_const.add (analyticAt_const.mul hzc)).add (analyticAt_const.mul (hzc.pow 2))
-  have houterArg : AnalyticAt ℂ (tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂) τ := by
-    simpa [tokenOuterArg] using (analyticAt_id.mul hpsi).add analyticAt_const
-  have hD : AnalyticAt ℂ
-      (fun z : ℂ => 1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z))) τ :=
-    analyticAt_const.add (houterArg.neg.cexp')
-  exact not_analyticAt_of_add_inv_mul_isolated_zero
-    (F := tokenC lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂)
-    (A := fun z : ℂ => (A₀ : ℂ) + (A₁ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ)))
-    (D := fun z : ℂ => 1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z)))
-    (G := tokenVisibleAmp lam b G₀ G₁)
-    (by intro z; simp [tokenC, tokenOuterArg, tokenVisibleAmp, csig])
-    hA hD hG hpole hamp houter_isolated
-
-/-- Same as `tokenC_not_analyticAt_of_outer_denom_isolated_zero`, using the analytic isolated-zero
-dichotomy to produce the punctured nonvanishing of the outer denominator. -/
-theorem tokenC_not_analyticAt_of_outer_denom_not_eventually_zero
-    (lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {τ : ℂ}
-    (hinner : 1 + Complex.exp (-((lam : ℂ) * τ + (b : ℂ))) ≠ 0)
-    (hpole : 1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ τ)) = 0)
-    (hamp : tokenVisibleAmp lam b G₀ G₁ τ ≠ 0)
-    (houter_not_zero : ¬ (∀ᶠ z in nhds τ,
-      1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z)) = 0)) :
-    ¬ AnalyticAt ℂ (tokenC lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) τ := by
-  have haff : AnalyticAt ℂ (fun z : ℂ => (lam : ℂ) * z + (b : ℂ)) τ :=
-    (analyticAt_const.mul analyticAt_id).add analyticAt_const
-  have hzc : AnalyticAt ℂ (fun z : ℂ => csig ((lam : ℂ) * z + (b : ℂ))) τ :=
-    AnalyticAt.comp_of_eq' (csig_analyticAt hinner) haff rfl
-  have hpsi : AnalyticAt ℂ (fun z : ℂ => (Ψ₀ : ℂ)
-      + (Ψ₁ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ))
-      + (Ψ₂ : ℂ) * csig ((lam : ℂ) * z + (b : ℂ)) ^ 2) τ :=
-    (analyticAt_const.add (analyticAt_const.mul hzc)).add (analyticAt_const.mul (hzc.pow 2))
-  have houterArg : AnalyticAt ℂ (tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂) τ := by
-    simpa [tokenOuterArg] using (analyticAt_id.mul hpsi).add analyticAt_const
-  have hD : AnalyticAt ℂ
-      (fun z : ℂ => 1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z))) τ :=
-    analyticAt_const.add (houterArg.neg.cexp')
-  exact tokenC_not_analyticAt_of_outer_denom_isolated_zero
-    lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ hinner hpole hamp
-    (eventually_ne_zero_nhdsWithin_of_analyticAt_not_eventually_zero hD houter_not_zero)
-
 /-- A concrete scalar token with a visible outer pole cannot be punctured-equal to a function
 analytic at that point. -/
 theorem tokenC_no_analytic_puncturedEq_of_outer_denom_not_eventually_zero
@@ -2478,138 +2395,7 @@ theorem tokenC_no_analytic_puncturedEq_of_outer_denom_not_eventually_zero
     hE heq hA hD hG hpole hamp
     (eventually_ne_zero_nhdsWithin_of_analyticAt_not_eventually_zero hD houter_not_zero)
 
-/-- Part 1 bridge: visible primed outer-pole accumulation gives non-meromorphicity of the
-primed scalar token once the local fact "visible outer pole implies non-analytic token" is
-available. -/
-theorem primed_token_not_meromorphicAt_of_visible_outer_poles
-    (lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {ρ : ℂ → ℂ} {ζ : ℂ}
-    (hρ : AnalyticAt ℂ ρ ζ) (hρ0 : ρ ζ = 0)
-    (hρne : ¬ (∀ᶠ z in nhds ζ, ρ z = ρ ζ))
-    (hρ_outer : ∀ᶠ τ in nhdsWithin ζ ({ζ}ᶜ : Set ℂ),
-      1 / ρ τ = tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ)
-    (hamp : ∀ᶠ τ in nhdsWithin ζ ({ζ}ᶜ : Set ℂ),
-      tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0)
-    (hpole_bad : ∀ τ : ℂ, tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0 →
-      1 + Complex.exp (-(tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ)) = 0 →
-      ¬ AnalyticAt ℂ (tokenC lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) τ) :
-    ¬ MeromorphicAt (tokenC lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) ζ := by
-  apply not_meromorphicAt_of_accumulating_not_analyticAt
-  intro U hU
-  obtain ⟨τ, hτU, hτne, hampτ, hpoleτ⟩ :=
-    primed_token_visible_outer_poles_accumulate
-      lam' b G₀ G₁ Ψ₀ Ψ₁ Ψ₂ hρ hρ0 hρne hρ_outer hamp hU
-  exact ⟨τ, hτU, hτne, hpole_bad τ hampτ hpoleτ⟩
-
-/-- Part 1, with the local singularity discharged by
-`tokenC_not_analyticAt_of_outer_denom_not_eventually_zero`.  The remaining inputs are the
-reciprocal extension of the outer argument and the regularity/nontriviality facts used to
-instantiate the visible-pole accumulation argument. -/
-theorem primed_token_not_meromorphicAt_of_visible_outer_poles_regular
-    (lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {ρ : ℂ → ℂ} {ζ : ℂ}
-    (hρ : AnalyticAt ℂ ρ ζ) (hρ0 : ρ ζ = 0)
-    (hρne : ¬ (∀ᶠ z in nhds ζ, ρ z = ρ ζ))
-    (hρ_outer : ∀ᶠ τ in nhdsWithin ζ ({ζ}ᶜ : Set ℂ),
-      1 / ρ τ = tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ)
-    (hinner : ∀ᶠ τ in nhdsWithin ζ ({ζ}ᶜ : Set ℂ),
-      1 + Complex.exp (-((lam' : ℂ) * τ + (b : ℂ))) ≠ 0)
-    (hamp : ∀ᶠ τ in nhdsWithin ζ ({ζ}ᶜ : Set ℂ),
-      tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0)
-    (houter_not_zero : ∀ τ : ℂ,
-      1 + Complex.exp (-((lam' : ℂ) * τ + (b : ℂ))) ≠ 0 →
-      tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0 →
-      1 + Complex.exp (-(tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ)) = 0 →
-      ¬ (∀ᶠ z in nhds τ,
-        1 + Complex.exp (-(tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ z)) = 0)) :
-    ¬ MeromorphicAt (tokenC lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) ζ := by
-  apply not_meromorphicAt_of_accumulating_not_analyticAt
-  intro U hU
-  rw [eventually_nhdsWithin_iff] at hρ_outer
-  rw [eventually_nhdsWithin_iff] at hinner
-  rw [eventually_nhdsWithin_iff] at hamp
-  have hside : ∀ᶠ τ in nhds ζ,
-      τ ≠ ζ →
-        1 / ρ τ = tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ ∧
-          1 + Complex.exp (-((lam' : ℂ) * τ + (b : ℂ))) ≠ 0 ∧
-          tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0 := by
-    filter_upwards [hρ_outer, hinner, hamp] with τ houterτ hinnerτ hampτ hτne
-    exact ⟨houterτ hτne, hinnerτ hτne, hampτ hτne⟩
-  have hUside :
-      U ∩ {τ : ℂ | τ = ζ ∨
-        (1 / ρ τ = tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ ∧
-          1 + Complex.exp (-((lam' : ℂ) * τ + (b : ℂ))) ≠ 0 ∧
-          tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0)} ∈ nhds ζ := by
-    refine Filter.inter_mem hU ?_
-    filter_upwards [hside] with τ hτ
-    by_cases hτζ : τ = ζ
-    · exact Or.inl hτζ
-    · exact Or.inr (hτ hτζ)
-  obtain ⟨τ, hτ, hτne, _, hpole⟩ :=
-    visible_outer_sigmoid_poles_accumulate
-      (ρ := ρ) (amp := fun _ : ℂ => (1 : ℂ))
-      hρ hρ0 hρne (Filter.Eventually.of_forall fun _ => one_ne_zero) hUside
-  have hsideτ : 1 / ρ τ = tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ ∧
-      1 + Complex.exp (-((lam' : ℂ) * τ + (b : ℂ))) ≠ 0 ∧
-      tokenVisibleAmp lam' b G₀ G₁ τ ≠ 0 := by
-    rcases hτ.2 with hτζ | hsideτ
-    · exact absurd hτζ hτne
-    · exact hsideτ
-  have hpole' : 1 + Complex.exp (-(tokenOuterArg lam' b Ψ₀ Ψ₁ Ψ₂ τ)) = 0 := by
-    rw [← hsideτ.1]
-    exact hpole
-  exact ⟨τ, hτ.1, hτne,
-    tokenC_not_analyticAt_of_outer_denom_not_eventually_zero
-      lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ hsideτ.2.1 hpole' hsideτ.2.2
-      (houter_not_zero τ hsideτ.2.1 hsideτ.2.2 hpole')⟩
-
-theorem primed_token_not_meromorphicAt_sigmoidPole_of_regular_outer
-    (lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {n : ℤ}
-    (hlam : lam ≠ 0) (hζ : sigmoidPole b lam n ≠ 0)
-    (hψ : Ψ₁ ≠ 0 ∨ Ψ₂ ≠ 0) (hG : G₀ ≠ 0 ∨ G₁ ≠ 0)
-    (houter_not_zero : ∀ τ : ℂ,
-      1 + Complex.exp (-((lam : ℂ) * τ + (b : ℂ))) ≠ 0 →
-      tokenVisibleAmp lam b G₀ G₁ τ ≠ 0 →
-      1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ τ)) = 0 →
-      ¬ (∀ᶠ z in nhds τ,
-        1 + Complex.exp (-(tokenOuterArg lam b Ψ₀ Ψ₁ Ψ₂ z)) = 0)) :
-    ¬ MeromorphicAt (tokenC lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) (sigmoidPole b lam n) := by
-  by_cases hΨ₂ : Ψ₂ = 0
-  · have hΨ₁ : Ψ₁ ≠ 0 := by
-      rcases hψ with hΨ₁ | hΨ₂ne
-      · exact hΨ₁
-      · exact False.elim (hΨ₂ne hΨ₂)
-    exact primed_token_not_meromorphicAt_of_visible_outer_poles_regular
-      lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂
-      (ρ := tokenOuterRhoLinear lam b Ψ₀ Ψ₁)
-      (tokenOuterRhoLinear_analyticAt_sigmoidPole b lam Ψ₀ Ψ₁ hlam hζ hΨ₁)
-      (by simpa using tokenOuterRhoLinear_zero_sigmoidPole b lam Ψ₀ Ψ₁ hlam hζ hΨ₁)
-      (tokenOuterRhoLinear_not_eventuallyConst_sigmoidPole b lam Ψ₀ Ψ₁ hlam hζ hΨ₁)
-      (tokenOuterRhoLinear_outerArg_nhdsWithin_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hΨ₂)
-      (inner_denom_eventually_ne_zero_nhdsWithin_sigmoidPole b lam hlam n)
-      (tokenVisibleAmp_eventually_ne_zero_nhdsWithin_sigmoidPole b lam G₀ G₁ hlam n hG)
-      houter_not_zero
-  · exact primed_token_not_meromorphicAt_of_visible_outer_poles_regular
-      lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂
-      (ρ := tokenOuterRhoQuadratic lam b Ψ₀ Ψ₁ Ψ₂)
-      (tokenOuterRhoQuadratic_analyticAt_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hζ hΨ₂)
-      (by simpa using tokenOuterRhoQuadratic_zero_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hζ hΨ₂)
-      (tokenOuterRhoQuadratic_not_eventuallyConst_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hζ hΨ₂)
-      (tokenOuterRhoQuadratic_outerArg_nhdsWithin_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam)
-      (inner_denom_eventually_ne_zero_nhdsWithin_sigmoidPole b lam hlam n)
-      (tokenVisibleAmp_eventually_ne_zero_nhdsWithin_sigmoidPole b lam G₀ G₁ hlam n hG)
-      houter_not_zero
-
 /-! #### Step 2 (isolatedness contradiction), consolidated from `scratch_step2` -/
-
-/-- **Step 2, core (isolatedness contradiction).**  If the unprimed token is meromorphic at `ζ`
-whenever `ζ` is not an inner pole, the two tokens agree on a punctured neighbourhood of `ζ`, and
-the primed token is not meromorphic at `ζ`, then `ζ` is an unprimed inner pole. -/
-theorem inner_pole_of_not_meromorphic {lam b : ℝ} {FC FC' : ℂ → ℂ} {ζ : ℂ}
-    (hmero_FC : 1 + Complex.exp (-((lam : ℂ) * ζ + (b : ℂ))) ≠ 0 → MeromorphicAt FC ζ)
-    (heq : FC =ᶠ[nhdsWithin ζ ({ζ}ᶜ : Set ℂ)] FC')
-    (hnotmero' : ¬ MeromorphicAt FC' ζ) :
-    1 + Complex.exp (-((lam : ℂ) * ζ + (b : ℂ))) = 0 := by
-  by_contra hne
-  exact hnotmero' ((hmero_FC hne).congr heq)
 
 /-- An inner-pole equation forces a nonzero slope (its solution has nonzero imaginary part). -/
 theorem lam_ne_zero_of_inner_pole {lam b : ℝ} {ζ : ℂ}
@@ -2630,18 +2416,6 @@ theorem exists_sigmoidPole_eq_of_inner_pole {lam b : ℝ} {ζ : ℂ} (hlam : lam
   rw [sigmoidPole, eq_div_iff hlamC]
   push_cast at hk ⊢
   linear_combination hk
-
-/-- **Step 2 (assembled).**  At a primed first-layer pole `sigmoidPole b lam' n`, the
-isolatedness inputs give: the unprimed slope `lam` is nonzero, and the primed pole is an
-unprimed pole `sigmoidPole b lam m`. -/
-theorem step2_pole_inclusion {lam lam' b : ℝ} {FC FC' : ℂ → ℂ} (n : ℤ)
-    (hmero_FC : ∀ ζ : ℂ, 1 + Complex.exp (-((lam : ℂ) * ζ + (b : ℂ))) ≠ 0 → MeromorphicAt FC ζ)
-    (heq : FC =ᶠ[nhdsWithin (sigmoidPole b lam' n) ({sigmoidPole b lam' n}ᶜ : Set ℂ)] FC')
-    (hnotmero' : ¬ MeromorphicAt FC' (sigmoidPole b lam' n)) :
-    lam ≠ 0 ∧ ∃ m : ℤ, sigmoidPole b lam' n = sigmoidPole b lam m := by
-  have hpole := inner_pole_of_not_meromorphic (hmero_FC _) heq hnotmero'
-  have hlam := lam_ne_zero_of_inner_pole hpole
-  exact ⟨hlam, exists_sigmoidPole_eq_of_inner_pole hlam hpole⟩
 
 /-! #### (A) Global analytic continuation -/
 
@@ -2800,49 +2574,6 @@ theorem tokenOuterArg_not_eventuallyConst_of_rho_at_innerPole
   have hval : ρ ζ = (H τ)⁻¹ := hρ_const_nhds.eq_of_nhds
   rw [hρ0] at hval
   exact (inv_ne_zero hc) hval.symm
-
-theorem primed_token_not_meromorphicAt_sigmoidPole
-    (lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ : ℝ) {n : ℤ}
-    (hlam : lam ≠ 0) (hζ : sigmoidPole b lam n ≠ 0)
-    (hψ : Ψ₁ ≠ 0 ∨ Ψ₂ ≠ 0) (hG : G₀ ≠ 0 ∨ G₁ ≠ 0) :
-    ¬ MeromorphicAt (tokenC lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂) (sigmoidPole b lam n) := by
-  by_cases hΨ₂ : Ψ₂ = 0
-  · have hΨ₁ : Ψ₁ ≠ 0 := by
-      rcases hψ with hΨ₁ | hΨ₂ne
-      · exact hΨ₁
-      · exact False.elim (hΨ₂ne hΨ₂)
-    exact primed_token_not_meromorphicAt_sigmoidPole_of_regular_outer
-      lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ hlam hζ hψ hG
-      (by
-        intro τ hinnerτ hampτ hpoleτ
-        exact outer_denom_not_eventually_zero_of_arg_not_eventually_const
-          (tokenOuterArg_analyticAt_of_inner_ne lam b Ψ₀ Ψ₁ Ψ₂ hinnerτ)
-          (tokenOuterArg_not_eventuallyConst_of_rho_at_innerPole
-            lam b Ψ₀ Ψ₁ Ψ₂
-            (ρ := tokenOuterRhoLinear lam b Ψ₀ Ψ₁)
-            (ζ := sigmoidPole b lam n) (τ := τ)
-            (tokenOuterRhoLinear_analyticAt_sigmoidPole b lam Ψ₀ Ψ₁ hlam hζ hΨ₁)
-            (by simpa using tokenOuterRhoLinear_zero_sigmoidPole b lam Ψ₀ Ψ₁ hlam hζ hΨ₁)
-            (tokenOuterRhoLinear_outerArg_nhdsWithin_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hΨ₂)
-            (inner_denom_eventually_ne_zero_nhdsWithin_sigmoidPole b lam hlam n)
-            hinnerτ hpoleτ)
-          hpoleτ)
-  · exact primed_token_not_meromorphicAt_sigmoidPole_of_regular_outer
-      lam b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ hlam hζ hψ hG
-      (by
-        intro τ hinnerτ hampτ hpoleτ
-        exact outer_denom_not_eventually_zero_of_arg_not_eventually_const
-          (tokenOuterArg_analyticAt_of_inner_ne lam b Ψ₀ Ψ₁ Ψ₂ hinnerτ)
-          (tokenOuterArg_not_eventuallyConst_of_rho_at_innerPole
-            lam b Ψ₀ Ψ₁ Ψ₂
-            (ρ := tokenOuterRhoQuadratic lam b Ψ₀ Ψ₁ Ψ₂)
-            (ζ := sigmoidPole b lam n) (τ := τ)
-            (tokenOuterRhoQuadratic_analyticAt_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hζ hΨ₂)
-            (by simpa using tokenOuterRhoQuadratic_zero_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam hζ hΨ₂)
-            (tokenOuterRhoQuadratic_outerArg_nhdsWithin_sigmoidPole b lam Ψ₀ Ψ₁ Ψ₂ hlam)
-            (inner_denom_eventually_ne_zero_nhdsWithin_sigmoidPole b lam hlam n)
-            hinnerτ hpoleτ)
-          hpoleτ)
 
 theorem scalar_primed_innerPole_forces_unprimed_innerPole
     (lam lam' b A₀ A₁ G₀ G₁ Ψ₀ Ψ₁ Ψ₂ Ψ₀' Ψ₁' Ψ₂' : ℝ) {n : ℤ}
@@ -3099,12 +2830,6 @@ theorem alpha_ne_zero {r : ℕ} (hr : 0 < r) : alpha r ≠ 0 := by
 def firstSlope {d : ℕ} (A : Matrix (Fin d) (Fin d) ℝ) (u v : Fin d → ℝ) : ℝ :=
   (u - v) ⬝ᵥ A.mulVec v
 
-theorem continuous_firstSlope {d : ℕ} (A : Matrix (Fin d) (Fin d) ℝ) :
-    Continuous (fun x : (Fin d → ℝ) × (Fin d → ℝ) => firstSlope A x.1 x.2) := by
-  unfold firstSlope
-  exact (continuous_fst.sub continuous_snd).dotProduct
-    (Continuous.matrix_mulVec continuous_const continuous_snd)
-
 theorem continuous_twoLayerG {d : ℕ} (V₁ V₂ : Matrix (Fin d) (Fin d) ℝ) (z : ℝ) :
     Continuous (fun x : (Fin d → ℝ) × (Fin d → ℝ) => twoLayerG V₁ V₂ x.1 x.2 z) := by
   unfold twoLayerG
@@ -3155,10 +2880,6 @@ theorem a1GoodSet_eq_inter {r d : ℕ} (V₁ A₁' V₂ A₂' : Matrix (Fin d) (
       = a1LambdaSet A₁' ∩ a1PhiSet r V₁ A₂' ∩ a1GSet r V₁ V₂ := by
   ext x; simp only [a1GoodSet, a1LambdaSet, a1PhiSet, a1GSet, Set.mem_setOf_eq, Set.mem_inter_iff]
   tauto
-
-theorem isOpen_a1LambdaSet {d : ℕ} (A₁' : Matrix (Fin d) (Fin d) ℝ) :
-    IsOpen (a1LambdaSet A₁') :=
-  isOpen_ne_fun (continuous_firstSlope A₁') continuous_const
 
 theorem isOpen_a1PhiSet {r d : ℕ} (V₁ A₂' : Matrix (Fin d) (Fin d) ℝ) :
     IsOpen (a1PhiSet r V₁ A₂') :=
@@ -3214,16 +2935,6 @@ theorem twoLayerPhi_alpha_single_zero {r d : ℕ} [NeZero d]
   simp only [zero_add]
   rw [Matrix.mulVec_smul, dotProduct_smul, quadform_basis]
   simp [smul_eq_mul]
-
-theorem exists_twoLayerG_alpha_ne_zero_of_hQ {r d : ℕ} [NeZero d]
-    {V₁ V₂ : Matrix (Fin d) (Fin d) ℝ}
-    (hQ : (V₂ * (1 + beta r • V₁) : Matrix (Fin d) (Fin d) ℝ) 0 0 ≠ 0) :
-    ∃ u v : Fin d → ℝ, twoLayerG V₁ V₂ u v (alpha r) ≠ 0 := by
-  refine ⟨Pi.single 0 1, 0, ?_⟩
-  intro hzero
-  have h0 := congrFun hzero 0
-  rw [twoLayerG_alpha_single_zero] at h0
-  exact hQ h0
 
 theorem exists_twoLayerPhi_alpha_ne_zero_of_hM {r d : ℕ} [NeZero d]
     (hr : 0 < r) {V₁ A₂ : Matrix (Fin d) (Fin d) ℝ}
@@ -3285,8 +2996,6 @@ def uvPoint {d : ℕ} (x : (Fin d → ℝ) × (Fin d → ℝ)) : UVIdx d → ℝ
 noncomputable def uvU (d : ℕ) : Fin d → UVPoly d := fun i => MvPolynomial.X (Sum.inl i)
 noncomputable def uvV (d : ℕ) : Fin d → UVPoly d := fun i => MvPolynomial.X (Sum.inr i)
 
-theorem eval_uvU {d : ℕ} (x : (Fin d → ℝ) × (Fin d → ℝ)) :
-    (fun i => MvPolynomial.eval (uvPoint x) (uvU d i)) = x.1 := by funext i; simp [uvPoint, uvU]
 theorem eval_uvV {d : ℕ} (x : (Fin d → ℝ) × (Fin d → ℝ)) :
     (fun i => MvPolynomial.eval (uvPoint x) (uvV d i)) = x.2 := by funext i; simp [uvPoint, uvV]
 theorem eval_uvSub {d : ℕ} (x : (Fin d → ℝ) × (Fin d → ℝ)) :

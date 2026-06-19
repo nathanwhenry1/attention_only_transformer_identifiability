@@ -43,132 +43,6 @@ theorem Fobs_depth_one_of_pos
           (Params.headValue θ).mulVec w := by
   rw [Fobs_eq_Frec_of_pos r hr_pos θ w v hτ, Frec_depth_one]
 
-/-- At depth one, constant-probe agreement with `w = 0` identifies the value matrix. -/
-theorem IDL_depth_one_headValue_eq_of_probeAgreement
-    {d r : Nat} (hr_pos : 0 < r)
-    {θ θ' : Params 1 d}
-    (hagree : ProbeObservableAgreement r θ θ') :
-    Params.headValue θ = Params.headValue θ' := by
-  apply Matrix.ext
-  intro i j
-  let w : Fin d -> ℝ := 0
-  let v : Fin d -> ℝ := Pi.single j 1
-  have hobs := hagree w v 1 (by norm_num)
-  rw [Fobs_depth_one_of_pos hr_pos θ w v (by norm_num),
-    Fobs_depth_one_of_pos hr_pos θ' w v (by norm_num)] at hobs
-  have hcoord := congrFun hobs i
-  have hcoord0 :
-      (v + (Params.headValue θ).mulVec v) i =
-        (v + (Params.headValue θ').mulVec v) i := by
-    simpa [w] using hcoord
-  have hmul :
-      (Params.headValue θ).mulVec v i =
-        (Params.headValue θ').mulVec v i := by
-    exact add_left_cancel hcoord0
-  simpa [v, matrix_mulVec_single_one] using hmul
-
-/-- At depth one, after the value matrix is identified and nonzero, probe agreement
-identifies the attention matrix. -/
-theorem IDL_depth_one_headAttention_eq_of_probeAgreement
-    {d r : Nat} (hr_pos : 0 < r)
-    {θ θ' : Params 1 d}
-    (hagree : ProbeObservableAgreement r θ θ')
-    (hvalue : Params.headValue θ = Params.headValue θ')
-    (hvalue_ne : Params.headValue θ ≠ 0) :
-    Params.headAttention θ = Params.headAttention θ' := by
-  classical
-  rcases exists_matrix_entry_ne_zero_of_ne_zero hvalue_ne with ⟨i, j, hij⟩
-  let U : Set (ProbePair d) :=
-    {p | (Params.headValue θ).mulVec p.1 i ≠ 0}
-  have hOpen : IsOpen U := by
-    have hpoly :
-        IsProbePolynomial d
-          (fun p : ProbePair d => (Params.headValue θ).mulVec p.1 i) :=
-      ⟨matrixMulVecCoordProbePoly (Params.headValue θ) i, by
-        intro p
-        simpa using eval_matrixMulVecCoordProbePoly (Params.headValue θ) i p⟩
-    simpa [U] using hpoly.isOpen_ne_zero
-  have hNonempty : U.Nonempty := by
-    refine ⟨((Pi.single j 1), 0), ?_⟩
-    simpa [U, matrix_mulVec_single_one] using hij
-  have hFirstAttention :
-      firstAttention θ = firstAttention θ' := by
-    refine firstAttention_eq_of_isOpen_nonempty_probe_set_firstSlope_eq
-      (U := U) hOpen hNonempty ?_
-    intro p hp
-    have hobs := hagree p.1 p.2 1 (by norm_num)
-    rw [Fobs_depth_one_of_pos hr_pos θ p.1 p.2 (by norm_num),
-      Fobs_depth_one_of_pos hr_pos θ' p.1 p.2 (by norm_num)] at hobs
-    have hcoord := congrFun hobs i
-    rw [← hvalue] at hcoord
-    have hgate_coord :
-        (sig (1 * firstSlope θ p.1 p.2 + Real.log r) •
-            (Params.headValue θ).mulVec p.1) i =
-          (sig (1 * firstSlope θ' p.1 p.2 + Real.log r) •
-            (Params.headValue θ).mulVec p.1) i := by
-      simpa [Pi.add_apply] using add_left_cancel hcoord
-    have hgate :
-        sig (1 * firstSlope θ p.1 p.2 + Real.log r)
-            * (Params.headValue θ).mulVec p.1 i =
-          sig (1 * firstSlope θ' p.1 p.2 + Real.log r)
-            * (Params.headValue θ).mulVec p.1 i := by
-      simpa [Pi.smul_apply, smul_eq_mul] using hgate_coord
-    have hsig :
-        sig (1 * firstSlope θ p.1 p.2 + Real.log r) =
-          sig (1 * firstSlope θ' p.1 p.2 + Real.log r) :=
-      mul_right_cancel₀ hp hgate
-    have harg :
-        1 * firstSlope θ p.1 p.2 + Real.log r =
-          1 * firstSlope θ' p.1 p.2 + Real.log r :=
-      sig_injective hsig
-    linarith
-  have hθ : firstAttention θ = Params.headAttention θ := by
-    simpa [Params.headAttention, Params.headLayer] using
-      firstAttention_eq_of_pos θ (by norm_num : 0 < 1)
-  have hθ' : firstAttention θ' = Params.headAttention θ' := by
-    simpa [Params.headAttention, Params.headLayer] using
-      firstAttention_eq_of_pos θ' (by norm_num : 0 < 1)
-  calc
-    Params.headAttention θ = firstAttention θ := hθ.symm
-    _ = firstAttention θ' := hFirstAttention
-    _ = Params.headAttention θ' := hθ'
-
-/-- At depth one, eventual agreement on the finitely many basis value probes identifies
-the value matrix. -/
-theorem IDL_depth_one_headValue_eq_of_basisTailAgreement
-    {d r : Nat} (hr_pos : 0 < r)
-    {θ θ' : Params 1 d}
-    (hagree :
-      ∀ j : Fin d, ∃ T : ℝ, 0 ≤ T ∧
-        RealTailObservableAgreementAt r θ θ'
-          ((0 : Fin d -> ℝ), Pi.single j (1 : ℝ)) T) :
-    Params.headValue θ = Params.headValue θ' := by
-  apply Matrix.ext
-  intro i j
-  let w : Fin d -> ℝ := 0
-  let v : Fin d -> ℝ := Pi.single j 1
-  rcases hagree j with ⟨T, hT_nonneg, hAgree⟩
-  let τ : ℝ := T + 1
-  have hτ_gt : T < τ := by
-    dsimp [τ]
-    linarith
-  have hτ_pos : 0 < τ := by
-    dsimp [τ]
-    linarith
-  have hobs := hAgree τ hτ_gt
-  rw [Fobs_depth_one_of_pos hr_pos θ w v hτ_pos,
-    Fobs_depth_one_of_pos hr_pos θ' w v hτ_pos] at hobs
-  have hcoord := congrFun hobs i
-  have hcoord0 :
-      (v + (Params.headValue θ).mulVec v) i =
-        (v + (Params.headValue θ').mulVec v) i := by
-    simpa [w] using hcoord
-  have hmul :
-      (Params.headValue θ).mulVec v i =
-        (Params.headValue θ').mulVec v i := by
-    exact add_left_cancel hcoord0
-  simpa [v, matrix_mulVec_single_one] using hmul
-
 /-- At depth one, the visible-tail coordinate is exactly a first-value coordinate. -/
 theorem visibleTailCoord_depth_one
     {d : Nat} (θ : Params 1 d) (w : Fin d -> ℝ) (i : Fin d) :
@@ -203,15 +77,6 @@ theorem depthOneComplexObservableCoord_analyticOn_affineRegular
     AnalyticAt.comp_of_eq' (csig_analyticAt hden) haff rfl
   simpa [depthOneComplexObservableCoord] using
     analyticAt_const.add (hsig.mul analyticAt_const)
-
-theorem depthOneComplexObservableCoord_continuousAt_affineRegular
-    {d : Nat} (V : Matrix (Fin d) (Fin d) ℝ)
-    (lambda b : ℝ) (w v : Fin d -> ℝ) (i : Fin d)
-    {z : ℂ} (hz : z ∉ affineOddPiIStratum b lambda) :
-    ContinuousAt
-      (depthOneComplexObservableCoord V lambda b w v i) z :=
-  (depthOneComplexObservableCoord_analyticOn_affineRegular
-    V lambda b w v i z hz).continuousAt
 
 theorem depthOneComplexObservableCoord_eq_ofReal_Fobs
     {d r : Nat} (hr_pos : 0 < r)
@@ -726,20 +591,6 @@ theorem texGenericBase_visibleTailMatrix_ne_zero {d : Nat} {θ : Params 1 d}
     simpa using hθ
   simpa [realVprod, paramStream_apply_of_lt] using hbase.value_ne_zero
 
-/-- A concrete nonzero entry of the first value matrix supplied by depth-one
-genericity.  This is the row/coordinate chosen in the TeX base case. -/
-theorem texGenericBase_exists_headValue_entry_ne_zero {d : Nat} {θ : Params 1 d}
-    (hθ : TexGeneric 1 d θ) :
-    ∃ i j : Fin d, Params.headValue θ i j ≠ 0 :=
-  exists_matrix_entry_ne_zero_of_ne_zero (texGenericBase_headValue_ne_zero hθ)
-
-/-- A concrete nonzero entry of the first attention matrix supplied by depth-one
-genericity. -/
-theorem texGenericBase_exists_headAttention_entry_ne_zero {d : Nat} {θ : Params 1 d}
-    (hθ : TexGeneric 1 d θ) :
-    ∃ i j : Fin d, Params.headAttention θ i j ≠ 0 :=
-  exists_matrix_entry_ne_zero_of_ne_zero (texGenericBase_headAttention_ne_zero hθ)
-
 /-- The open dense probe-genericity package specialized to the depth-one base case. -/
 def texGenericBase_oStarGenericAssumptions
     {d r : Nat} {θ θ' : Params 1 d}
@@ -762,12 +613,6 @@ abbrev IDLDepthOneGenericProbeSet
     (D : IDLData 1 d r θ θ') : Set (ProbePair d) :=
   O_star θ' D.O
 
-theorem IDLDepthOneGenericProbeSet_isOpen
-    {d r : Nat} {θ θ' : Params 1 d}
-    (D : IDLData 1 d r θ θ') :
-    IsOpen (IDLDepthOneGenericProbeSet D) :=
-  O_star_isOpen_of_generic (texGenericBase_oStarGenericAssumptions D)
-
 theorem IDLDepthOneGenericProbeSet_nonempty
     {d r : Nat} {θ θ' : Params 1 d}
     (D : IDLData 1 d r θ θ') :
@@ -789,17 +634,9 @@ namespace IDLDepthOneProbeData
 variable {d r : Nat} {θ θ' : Params 1 d}
 variable {D : IDLData 1 d r θ θ'}
 
-theorem mem_O (P : IDLDepthOneProbeData D) :
-    P.probe ∈ D.O :=
-  O_star_mem_base P.mem_generic_probe
-
 theorem primed_firstSlope_ne (P : IDLDepthOneProbeData D) :
     firstSlope θ' P.probe.1 P.probe.2 ≠ 0 :=
   O_star_firstSlope_ne P.mem_generic_probe
-
-theorem primed_visibleTailVector_ne (P : IDLDepthOneProbeData D) :
-    visibleTailVector θ' P.probe.1 ≠ 0 :=
-  O_star_visibleTailVector_ne P.mem_generic_probe
 
 end IDLDepthOneProbeData
 

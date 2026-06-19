@@ -87,20 +87,6 @@ def TierSystem.ofPolynomialNestedTailData {m : Nat}
     (TierSystem.ofPolynomialNestedTailData P D).nestedFamily = D.toNestedTailFamily :=
   rfl
 
-/-- The last-layer observable decomposition, rewritten in the `m - 1` indexing used by
-Claim C. -/
-theorem lastTier_observable_split {m : Nat} (A : TierSystem m)
-    (hm : 0 < m) (τ : ℂ) :
-    A.stratification.observable τ =
-      lastTierLower A τ
-        + A.stratification.s (m - 1) τ *
-          A.stratification.lastLayer.coeff (m - 1) τ := by
-  cases m with
-  | zero =>
-      omega
-  | succ k =>
-      simpa [lastTierLower] using A.stratification.lastlayer_split (m := k) τ
-
 /-- Lower last-layer contribution boundedness from boundedness of each lower gate and
 coefficient. -/
 theorem lastTierLower_puncturedBounded_of_lower_terms {m : Nat} {A : TierSystem m}
@@ -127,18 +113,6 @@ theorem lastTierLower_puncturedBounded_of_lower_terms {m : Nat} {A : TierSystem 
       simpa [lastTierLower] using
         A.stratification.lower_lastlayer_puncturedBounded
           (m := k) (τ := τ) hs' hc'
-
-/-- Continuous lower gates and coefficients are enough to bound the lower last-layer
-contribution near a last-tier point. -/
-theorem lastTierLower_puncturedBounded_of_continuousAt {m : Nat} {A : TierSystem m}
-    (hm : 0 < m) {τ : ℂ}
-    (hs : ∀ i, i < m - 1 -> ContinuousAt (A.stratification.s i) τ)
-    (hc :
-      ∀ i, i < m - 1 -> ContinuousAt (A.stratification.lastLayer.coeff i) τ) :
-    PuncturedBoundedAt (lastTierLower A) τ :=
-  lastTierLower_puncturedBounded_of_lower_terms (A := A) hm
-    (fun i hi => PuncturedBoundedAt.of_continuousAt (hs i hi))
-    (fun i hi => PuncturedBoundedAt.of_continuousAt (hc i hi))
 
 /-- Lower gates are continuous at a last-tier point because that point is regular for
 every earlier gate. -/
@@ -309,17 +283,6 @@ def of_continuousAt
 variable (D : LastTierConcreteData A)
 include D
 
-/-- Compile the sharpened concrete Claim-C obligations to the existing downstream
-`LastTierBlowupData` interface. -/
-def toLastTierBlowupData : LastTierBlowupData A where
-  lower_puncturedBounded := fun hm hτ =>
-    D.lowerTerms.lower_puncturedBounded hm hτ
-  visibleCoeffLimit := D.visibleCoeff.visibleCoeffLimit
-  visibleCoeff_tendsto := fun hm hτ =>
-    D.visibleCoeff.visibleCoeff_tendsto hm hτ
-  visibleCoeff_ne_zero := fun hm hτ =>
-    D.visibleCoeff.visibleCoeff_ne_zero hm hτ
-
 /-- Pointwise Claim C from the sharpened concrete obligations. -/
 theorem observable_blowsUpAt (hm : 0 < m) {τ : ℂ}
     (hτ : τ ∈ A.T (m - 1)) :
@@ -332,16 +295,6 @@ theorem observable_blowsUpAt (hm : 0 < m) {τ : ℂ}
 /-- Package Claim C from the sharpened concrete obligations. -/
 def toLastTierBlowup (hm : 0 < m) : LastTierBlowup A :=
   { blowsUp := fun _ hτ => D.observable_blowsUpAt hm hτ }
-
-/-- Restrict the sharpened concrete Claim-C obligations to the zero-free last tier. -/
-def toZeroFreeLastTierBlowupData : ZeroFreeLastTierBlowupData A where
-  lower_puncturedBounded := fun hm hτ0 =>
-    D.lowerTerms.lower_puncturedBounded hm (A.T0_subset_T (m - 1) hτ0)
-  visibleCoeffLimit := D.visibleCoeff.visibleCoeffLimit
-  visibleCoeff_tendsto := fun hm hτ0 =>
-    D.visibleCoeff.visibleCoeff_tendsto hm (A.T0_subset_T (m - 1) hτ0)
-  visibleCoeff_ne_zero := fun hm hτ0 =>
-    D.visibleCoeff.visibleCoeff_ne_zero hm (A.T0_subset_T (m - 1) hτ0)
 
 /-- Pointwise zero-free Claim C from the sharpened concrete obligations. -/
 theorem zeroFreeObservable_blowsUpAt (hm : 0 < m) {τ : ℂ}
@@ -365,12 +318,6 @@ def toLastTierConcreteData
     (lowerTerms : LastTierLowerTermData A) : LastTierConcreteData A :=
   LastTierConcreteData.ofData lowerTerms D
 
-/-- Compile visible-coefficient data plus lower-term data to the downstream
-`LastTierBlowupData` interface. -/
-def toLastTierBlowupData
-    (lowerTerms : LastTierLowerTermData A) : LastTierBlowupData A :=
-  (D.toLastTierConcreteData lowerTerms).toLastTierBlowupData
-
 /-- Pointwise Claim C from visible-coefficient data and lower-term data. -/
 theorem observable_blowsUpAt
     (lowerTerms : LastTierLowerTermData A) (hm : 0 < m) {τ : ℂ}
@@ -382,46 +329,6 @@ theorem observable_blowsUpAt
 def toLastTierBlowup
     (lowerTerms : LastTierLowerTermData A) (hm : 0 < m) : LastTierBlowup A :=
   (D.toLastTierConcreteData lowerTerms).toLastTierBlowup hm
-
-/-- Compile direct visible-coefficient data and continuous lower terms to the downstream
-`LastTierBlowupData` interface. -/
-def toLastTierBlowupData_of_continuousAt
-    (hs :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 -> ContinuousAt (A.stratification.s i) τ)
-    (hc :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 ->
-          ContinuousAt (A.stratification.lastLayer.coeff i) τ) :
-    LastTierBlowupData A :=
-  (LastTierConcreteData.of_continuousAt (A := A) D hs hc).toLastTierBlowupData
-
-/-- Pointwise Claim C from direct visible-coefficient data and continuous lower terms. -/
-theorem observable_blowsUpAt_of_continuousAt
-    (hm : 0 < m)
-    (hs :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 -> ContinuousAt (A.stratification.s i) τ)
-    (hc :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 ->
-          ContinuousAt (A.stratification.lastLayer.coeff i) τ)
-    {τ : ℂ} (hτ : τ ∈ A.T (m - 1)) :
-    BlowsUpAt A.stratification.observable τ :=
-  (LastTierConcreteData.of_continuousAt (A := A) D hs hc).observable_blowsUpAt hm hτ
-
-/-- Package Claim C from direct visible-coefficient data and continuous lower terms. -/
-def toLastTierBlowup_of_continuousAt
-    (hm : 0 < m)
-    (hs :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 -> ContinuousAt (A.stratification.s i) τ)
-    (hc :
-      ∀ {τ : ℂ}, 0 < m -> τ ∈ A.T (m - 1) ->
-        ∀ i, i < m - 1 ->
-          ContinuousAt (A.stratification.lastLayer.coeff i) τ) :
-    LastTierBlowup A :=
-  (LastTierConcreteData.of_continuousAt (A := A) D hs hc).toLastTierBlowup hm
 
 end LastTierVisibleCoeffData
 
@@ -464,16 +371,6 @@ theorem observable_blowsUpAt (hm : 0 < m) {τ : ℂ}
 /-- Package the pointwise Claim C theorem for downstream pole transfer. -/
 def toLastTierBlowup (hm : 0 < m) : LastTierBlowup A where
   blowsUp := fun τ hτ => D.observable_blowsUpAt hm (τ := τ) hτ
-
-/-- Restrict packaged old-tier Claim-C data to the zero-free last tier. -/
-def toZeroFreeLastTierBlowupData : ZeroFreeLastTierBlowupData A where
-  lower_puncturedBounded := fun hm hτ0 =>
-    D.lower_puncturedBounded hm (A.T0_subset_T (m - 1) hτ0)
-  visibleCoeffLimit := D.visibleCoeffLimit
-  visibleCoeff_tendsto := fun hm hτ0 =>
-    D.visibleCoeff_tendsto hm (A.T0_subset_T (m - 1) hτ0)
-  visibleCoeff_ne_zero := fun hm hτ0 =>
-    D.visibleCoeff_ne_zero hm (A.T0_subset_T (m - 1) hτ0)
 
 /-- Pointwise zero-free Claim C from packaged old-tier Claim-C data. -/
 theorem zeroFreeObservable_blowsUpAt (hm : 0 < m) {τ : ℂ}

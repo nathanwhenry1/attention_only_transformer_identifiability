@@ -180,27 +180,6 @@ theorem map_genAttention {L d : Nat} (θ : Params L d) (l : Fin L) :
 
 /-! ## Null sets pulled back to parameters -/
 
-/-- The parameter zero set associated to a coordinate polynomial. -/
-def paramPolynomialZeroSet {L d : Nat} (p : ParamRing L d) : Set (Params L d) :=
-  {θ | (MvPolynomial.eval (paramFlat θ)) p = 0}
-
-/-- Pulling a nonzero coordinate-polynomial zero set back along `paramFlat` gives a
-Lebesgue-null subset of the concrete parameter space. -/
-theorem paramPolynomialZeroSet_null {L d : Nat} (p : ParamRing L d) (hp : p ≠ 0) :
-    volume (paramPolynomialZeroSet p : Set (Params L d)) = 0 := by
-  have hmp := measurePreserving_paramFlat L d
-  have hnull := mvpoly_eval_null' p hp
-  have hmeas :
-      NullMeasurableSet
-        {x : ParamCoord L d -> ℝ | (MvPolynomial.eval x) p = 0} :=
-    ((MvPolynomial.continuous_eval p).measurable
-      (measurableSet_singleton 0)).nullMeasurableSet
-  have hset : (paramPolynomialZeroSet p : Set (Params L d))
-      = paramFlat ⁻¹' {x : ParamCoord L d -> ℝ | (MvPolynomial.eval x) p = 0} :=
-    rfl
-  rw [hset, hmp.measure_preimage hmeas]
-  exact hnull
-
 /-- Pull a packaged finite coordinate-polynomial nonvanishing locus back to the
 parameter space. -/
 def paramNonvanishingCarrier {L d : Nat} {κ : Type*}

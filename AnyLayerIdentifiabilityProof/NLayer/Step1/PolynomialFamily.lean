@@ -68,14 +68,6 @@ noncomputable def step1PolynomialFamilyPoly {K d : Nat}
   | none => step1VisiblePoly θ w iota
   | some n => step1LastSqCoeffPoly θ w n
 
-/-- Depth-indexed wrapper: for a depth `L`, the Step 1 gate ring has `K = L - 1`
-variables and contains `f_2, ..., f_L` plus `g`. -/
-noncomputable def step1PolynomialFamilyForDepth {L d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) (iota : Fin d) :
-    Step1PolynomialIndex (L - 1) → GatePoly (L - 1) :=
-  step1PolynomialFamilyPoly θ w iota
-
 /-! ## Coefficient access -/
 
 /-- Coefficient-family bridge specialized to the packaged `f_{n+2}` polynomial. -/
@@ -407,13 +399,6 @@ theorem step1PolynomialFamilyAssumptionsForDepth_of_OStar {L d : Nat}
       omega
   · exact step1VisibleTailCoeff_ne_of_visibleTailCoord_ne hL hvisible
 
-theorem step1PolynomialFamilyAssumptionsForDepth_of_visibleChoice {L d : Nat}
-    {θ' : Params L d} {O : Set (ProbePair d)} {p : ProbePair d}
-    (hL : 0 < L) (hp : p ∈ O_star θ' O)
-    (c : VisibleCoordinateChoice θ' p) :
-    Step1PolynomialFamilyAssumptionsForDepth L d (paramStream θ') p.1 c.iota :=
-  step1PolynomialFamilyAssumptionsForDepth_of_OStar hL hp c.nonzero
-
 theorem FixedOStarProbe.step1PolynomialFamilyAssumptionsForDepth {r L d : Nat}
     {O : Set (ProbePair d)} {θ θ' : Params L d} (hL : 0 < L)
     (p : FixedOStarProbe r L d O θ θ') :
@@ -425,15 +410,6 @@ namespace Step1PolynomialFamilyAssumptions
 variable {K d : Nat}
 variable {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
 variable {w : Fin d → ℝ} {iota : Fin d}
-
-theorem coeff_lastSq_ne (h : Step1PolynomialFamilyAssumptions K d θ w iota)
-    (n : Fin K) :
-    MvPolynomial.coeff (gateTopSq K (n : Nat)) (step1LastSqCoeffPoly θ w n) ≠ 0 :=
-  coeff_step1LastSqCoeffPoly_gateTopSq_ne θ n w (h.kappa_ne n)
-
-theorem coeff_visible_ne (h : Step1PolynomialFamilyAssumptions K d θ w iota) :
-    MvPolynomial.coeff (gateTop K K) (step1VisiblePoly θ w iota) ≠ 0 :=
-  coeff_step1VisiblePoly_gateTop_ne θ w iota h.visible_ne
 
 theorem hasDominantTopCoeff_lastSq
     (h : Step1PolynomialFamilyAssumptions K d θ w iota) (n : Fin K) :
@@ -453,11 +429,6 @@ theorem hasDominantTopCoeff_poly
   | none => exact h.hasDominantTopCoeff_visible
   | some n => exact h.hasDominantTopCoeff_lastSq n
 
-theorem poly_ne_zero (h : Step1PolynomialFamilyAssumptions K d θ w iota)
-    (a : Step1PolynomialIndex K) :
-    step1PolynomialFamilyPoly θ w iota a ≠ 0 :=
-  (h.hasDominantTopCoeff_poly a).ne_zero
-
 /-- The packaged family as a `DominantPolynomialFamily`, ready for product and nested
 largeness APIs. -/
 noncomputable def dominantPolynomialFamily
@@ -472,20 +443,7 @@ theorem hasDominantTopCoeff_prod
     HasDominantTopCoeff (∏ a ∈ s, step1PolynomialFamilyPoly θ w iota a) :=
   (h.dominantPolynomialFamily).hasDominantTopCoeff_prod s
 
-theorem prod_ne_zero (h : Step1PolynomialFamilyAssumptions K d θ w iota)
-    (s : Finset (Step1PolynomialIndex K)) :
-    (∏ a ∈ s, step1PolynomialFamilyPoly θ w iota a) ≠ 0 :=
-  (h.dominantPolynomialFamily).prod_ne_zero s
-
 end Step1PolynomialFamilyAssumptions
-
-/-- Depth-indexed dominant-family wrapper for `K = L - 1`. -/
-noncomputable def dominantStep1PolynomialFamilyForDepth {L d : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w : Fin d → ℝ} {iota : Fin d}
-    (h : Step1PolynomialFamilyAssumptionsForDepth L d θ w iota) :
-    DominantPolynomialFamily (Step1PolynomialIndex (L - 1)) (Fin (L - 1)) ℂ :=
-  h.dominantPolynomialFamily
 
 /-! ## The global product `P = f_2 · ⋯ · f_{n+2} · g`
 
@@ -898,31 +856,6 @@ theorem eval_step1PropagationLeadingCoeffPoly_zero_ne_of_depth {L d : Nat}
     (step1PropagationLeadingCoeffPoly_ne_zero_of_depth
       (L := L) (iota := iota) h h0) x
 
-/-- The canonical propagation-tail leading evaluator is continuous on every nested
-region. -/
-theorem continuousOn_step1PropagationNestedTailFamily_lead {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) (m : Nat) :
-    ContinuousOn ((step1PropagationNestedTailFamily θ w).step m).lead
-      ((step1PropagationNestedTailFamily θ w).region m) := by
-  simpa [step1PropagationNestedTailFamily, step1PropagationTailData] using
-    continuousOn_polynomialTailPresentation_lead
-      (step1PropagationTailPoly θ w m)
-      (U := (step1PropagationNestedTailFamily θ w).region m)
-
-/-- The canonical propagation-tail lower coefficient evaluators are continuous on every
-nested region. -/
-theorem continuousOn_step1PropagationNestedTailFamily_lower {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) (m : Nat)
-    (i : Fin ((step1PropagationNestedTailFamily θ w).step m).degree) :
-    ContinuousOn (((step1PropagationNestedTailFamily θ w).step m).lower i)
-      ((step1PropagationNestedTailFamily θ w).region m) := by
-  simpa [step1PropagationNestedTailFamily, step1PropagationTailData] using
-    continuousOn_polynomialTailPresentation_lower
-      (step1PropagationTailPoly θ w m)
-      (U := (step1PropagationNestedTailFamily θ w).region m) i
-
 /-- Polynomial-backed data for the concrete Step 1 propagation tail tower. -/
 noncomputable def step1PropagationPolynomialNestedTailData {d : Nat}
     (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
@@ -983,69 +916,6 @@ theorem step1PropagationVisibleNestedTailData_tailData {d : Nat}
       PolynomialTailPresentationData.ofPolynomial
         (step1PropagationVisibleTailPoly θ w iota m) :=
   rfl
-
-/-- Membership in the combined zero-free region makes the visible factor nonzero at
-the corresponding successor depth. -/
-theorem eval_step1VisiblePoly_ne_zero_of_propagationVisibleZeroFreeRegion_succ
-    {K d : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w : Fin d → ℝ} {iota : Fin d}
-    {z : Fin (K + 1) → ℂ}
-    (hz : z ∈ (step1PropagationVisibleNestedTailData θ w iota).zeroFreeRegion
-        (K + 1)) :
-    MvPolynomial.eval z (step1VisiblePoly (K := K + 1) θ w iota) ≠ 0 := by
-  let D := step1PropagationVisibleNestedTailData θ w iota
-  have hprod_eval :
-      MvPolynomial.eval z (D.tailData K).poly ≠ 0 :=
-    D.zeroFreeRegion_eval_ne_zero_of_mem_succ (m := K) hz
-  change
-      MvPolynomial.eval z
-        (step1PropagationVisibleTailPoly θ w iota K) ≠ 0 at hprod_eval
-  rw [step1PropagationVisibleTailPoly, MvPolynomial.eval_mul] at hprod_eval
-  exact (mul_ne_zero_iff.mp hprod_eval).2
-
-/-- Membership in the combined zero-free region also makes the propagation factor
-nonzero at the corresponding successor depth. -/
-theorem eval_step1PropagationTailPoly_ne_zero_of_propagationVisibleZeroFreeRegion_succ
-    {K d : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w : Fin d → ℝ} {iota : Fin d}
-    {z : Fin (K + 1) → ℂ}
-    (hz : z ∈ (step1PropagationVisibleNestedTailData θ w iota).zeroFreeRegion
-        (K + 1)) :
-    MvPolynomial.eval z (step1PropagationTailPoly θ w K) ≠ 0 := by
-  let D := step1PropagationVisibleNestedTailData θ w iota
-  have hprod_eval :
-      MvPolynomial.eval z (D.tailData K).poly ≠ 0 :=
-    D.zeroFreeRegion_eval_ne_zero_of_mem_succ (m := K) hz
-  change
-      MvPolynomial.eval z
-        (step1PropagationVisibleTailPoly θ w iota K) ≠ 0 at hprod_eval
-  rw [step1PropagationVisibleTailPoly, MvPolynomial.eval_mul] at hprod_eval
-  exact (mul_ne_zero_iff.mp hprod_eval).1
-
-/-- Depth-indexed form of visible nonvanishing on the combined propagation-visible
-zero-free last region. -/
-theorem eval_step1VisiblePoly_ne_zero_of_propagationVisibleZeroFreeRegion
-    {L d : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w : Fin d → ℝ} {iota : Fin d}
-    (hDepth : 1 < L)
-    {z : Fin (L - 1) → ℂ}
-    (hz : z ∈ (step1PropagationVisibleNestedTailData θ w iota).zeroFreeRegion
-        (L - 1)) :
-    MvPolynomial.eval z (step1VisiblePoly (K := L - 1) θ w iota) ≠ 0 := by
-  cases L with
-  | zero =>
-      omega
-  | succ L =>
-      cases L with
-      | zero =>
-          omega
-      | succ K =>
-          simpa using
-            eval_step1VisiblePoly_ne_zero_of_propagationVisibleZeroFreeRegion_succ
-              (K := K) (θ := θ) (w := w) (iota := iota) (z := z) hz
 
 /-- Leading-coefficient factorization of the combined propagation-visible tail polynomial.
 
@@ -1131,90 +1001,6 @@ theorem mem_step1PropagationZeroFreeRegion_succ {d m : Nat}
         MvPolynomial.eval z (step1PropagationLeadingCoeffPoly θ w (m + 1)) ≠ 0 := by
   rfl
 
-/-- The concrete zero-free propagation regions are contained in the original recursive
-threshold regions.  This is only a subset statement, not an equality. -/
-theorem step1PropagationZeroFreeRegion_subset_region {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) :
-    ∀ m : Nat,
-      step1PropagationZeroFreeRegion θ w m ⊆
-        (step1PropagationNestedTailFamily θ w).region m := by
-  intro m
-  simpa [step1PropagationZeroFreeRegion] using
-    (step1PropagationNestedTailFamily θ w).zeroFreeRegion_subset_region m
-
-/-- Polynomial-backed version of
-`step1PropagationZeroFreeRegion_subset_region`. -/
-theorem step1PropagationPolynomialZeroFreeRegion_subset_region {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) :
-    ∀ m : Nat,
-      step1PropagationPolynomialZeroFreeRegion θ w m ⊆
-        (step1PropagationPolynomialNestedTailData θ w).region m := by
-  simpa [step1PropagationPolynomialZeroFreeRegion] using
-    (step1PropagationPolynomialNestedTailData θ w).zeroFreeRegion_subset_region
-
-/-- The concrete zero-free propagation regions are open. -/
-theorem isOpen_step1PropagationZeroFreeRegion {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) :
-    ∀ m : Nat, IsOpen (step1PropagationZeroFreeRegion θ w m) := by
-  intro m
-  simpa [step1PropagationZeroFreeRegion] using
-    (step1PropagationPolynomialNestedTailData θ w).isOpen_zeroFreeRegion m
-
-/-- Polynomial-backed alias for openness of the concrete zero-free propagation regions. -/
-theorem isOpen_step1PropagationPolynomialZeroFreeRegion {d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) :
-    ∀ m : Nat, IsOpen (step1PropagationPolynomialZeroFreeRegion θ w m) := by
-  intro m
-  simpa [step1PropagationPolynomialZeroFreeRegion] using
-    (step1PropagationPolynomialNestedTailData θ w).isOpen_zeroFreeRegion m
-
-/-- Membership in the concrete zero-free propagation region supplies nonvanishing of the
-extracted leading coefficient at that level. -/
-theorem step1PropagationLeadingCoeff_ne_of_mem_zeroFreeRegion {d m : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) {x : Fin m → ℂ}
-    (hx : x ∈ step1PropagationZeroFreeRegion θ w m) :
-    MvPolynomial.eval x (step1PropagationLeadingCoeffPoly θ w m) ≠ 0 := by
-  simpa [step1PropagationZeroFreeRegion] using
-    (step1PropagationNestedTailFamily θ w).lead_ne_of_mem_zeroFreeRegion hx
-
-/-- Depth-indexed form of `step1PropagationLeadingCoeff_ne_of_mem_zeroFreeRegion`,
-matching the propagation range `m < L - 1`. -/
-theorem step1PropagationLeadingCoeff_ne_on_zeroFreeRegion {L d : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) :
-    ∀ m : Nat, m < L - 1 →
-      ∀ x : Fin m → ℂ,
-        x ∈ (step1PropagationNestedTailFamily θ w).zeroFreeRegion m →
-          MvPolynomial.eval x (step1PropagationLeadingCoeffPoly θ w m) ≠ 0 := by
-  intro m _hm x hx
-  simpa using
-    (step1PropagationNestedTailFamily θ w).lead_ne_of_mem_zeroFreeRegion hx
-
-/-- Nonvanishing of the concrete nested-step evaluator on the strengthened zero-free
-region. -/
-theorem step1PropagationZeroFreeRegion_evalStep_ne_zero_of_mem_succ {d m : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) {z : Fin (m + 1) → ℂ}
-    (hz : z ∈ step1PropagationZeroFreeRegion θ w (m + 1)) :
-    (step1PropagationNestedTailFamily θ w).evalStep z ≠ 0 := by
-  simpa [step1PropagationZeroFreeRegion] using
-    (step1PropagationNestedTailFamily θ w).evalStep_ne_zero_of_mem_zeroFreeRegion hz
-
-/-- Polynomial evaluation form of
-`step1PropagationZeroFreeRegion_evalStep_ne_zero_of_mem_succ`. -/
-theorem eval_step1PropagationTailPoly_ne_zero_of_mem_zeroFreeRegion_succ {d m : Nat}
-    (θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ)
-    (w : Fin d → ℝ) {z : Fin (m + 1) → ℂ}
-    (hz : z ∈ step1PropagationZeroFreeRegion θ w (m + 1)) :
-    MvPolynomial.eval z (step1PropagationTailPoly θ w m) ≠ 0 := by
-  rw [← step1PropagationNestedTailFamily_evalStep θ w z]
-  exact step1PropagationZeroFreeRegion_evalStep_ne_zero_of_mem_succ θ w hz
-
 /-- Zero-free-region assumptions for the concrete Step 1 propagation tower at a fixed
 depth.  The leading-coefficient field is discharged by the strengthened region API; it
 is kept here so downstream code can consume the same shape as the older region-based
@@ -1229,61 +1015,11 @@ structure Step1PropagationZeroFreeNestedAssumptionsForDepth (L d : Nat)
         x ∈ step1PropagationZeroFreeRegion θ w m →
           MvPolynomial.eval x (step1PropagationLeadingCoeffPoly θ w m) ≠ 0
 
-/-- Constructor for the zero-free-region assumption package from the existing
-polynomial-family assumptions. -/
-theorem step1PropagationZeroFreeNestedAssumptionsForDepth_of_polynomialFamily
-    {L d : Nat}
-    {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
-    {w : Fin d → ℝ} {iota : Fin d}
-    (hpoly : Step1PolynomialFamilyAssumptionsForDepth L d θ w iota) :
-    Step1PropagationZeroFreeNestedAssumptionsForDepth L d θ w iota where
-  polynomialFamily := hpoly
-  leadingCoeff_ne_on_zeroFreeRegion := by
-    intro m _hm x hx
-    exact step1PropagationLeadingCoeff_ne_of_mem_zeroFreeRegion θ w hx
-
 namespace Step1PropagationZeroFreeNestedAssumptionsForDepth
 
 variable {L d : Nat}
 variable {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
 variable {w : Fin d → ℝ} {iota : Fin d}
-
-/-- The DTC fact for the `m`th concrete propagation polynomial, supplied by the embedded
-Step 1 polynomial-family assumptions. -/
-theorem hasDominantTopCoeff_tailPoly
-    (h : Step1PropagationZeroFreeNestedAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    HasDominantTopCoeff (step1PropagationTailPoly θ w m) :=
-  hasDominantTopCoeff_step1PropagationTailPoly_of_depth h.polynomialFamily hm
-
-/-- The DTC fact for the extracted last-variable leading coefficient. -/
-theorem hasDominantTopCoeff_leadingCoeffPoly
-    (h : Step1PropagationZeroFreeNestedAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    HasDominantTopCoeff (step1PropagationLeadingCoeffPoly θ w m) :=
-  hasDominantTopCoeff_step1PropagationLeadingCoeffPoly_of_depth h.polynomialFamily hm
-
-/-- The zero-free-region nonvanishing field in the exact `NestedTailFamily` step form. -/
-theorem leadingCoeff_ne_on_zeroFreeRegion_step
-    (h : Step1PropagationZeroFreeNestedAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    ∀ x : Fin m → ℂ,
-      x ∈ step1PropagationZeroFreeRegion θ w m →
-        ((step1PropagationNestedTailFamily θ w).step m).lead x ≠ 0 := by
-  intro x hx
-  simpa using h.leadingCoeff_ne_on_zeroFreeRegion m hm x hx
-
-/-- The zero-free-region nonvanishing field for the polynomial-backed tail-data package. -/
-theorem leadingCoeff_ne_on_zeroFreeRegion_tailData
-    (h : Step1PropagationZeroFreeNestedAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    ∀ x : Fin m → ℂ,
-      x ∈ step1PropagationPolynomialZeroFreeRegion θ w m →
-        ((step1PropagationPolynomialNestedTailData θ w).tailData m).presentation.lead x
-          ≠ 0 := by
-  intro x hx
-  simpa [step1PropagationPolynomialZeroFreeRegion] using
-    h.leadingCoeff_ne_on_zeroFreeRegion m hm x hx
 
 end Step1PropagationZeroFreeNestedAssumptionsForDepth
 
@@ -1347,44 +1083,6 @@ namespace Step1PropagationNestedLargenessAssumptionsForDepth
 variable {L d : Nat}
 variable {θ : Nat → Matrix (Fin d) (Fin d) ℝ × Matrix (Fin d) (Fin d) ℝ}
 variable {w : Fin d → ℝ} {iota : Fin d}
-
-/-- The DTC fact for the `m`th concrete propagation polynomial, supplied by the embedded
-Step 1 polynomial-family assumptions. -/
-theorem hasDominantTopCoeff_tailPoly
-    (h : Step1PropagationNestedLargenessAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    HasDominantTopCoeff (step1PropagationTailPoly θ w m) :=
-  hasDominantTopCoeff_step1PropagationTailPoly_of_depth h.polynomialFamily hm
-
-/-- The DTC fact for the extracted last-variable leading coefficient. -/
-theorem hasDominantTopCoeff_leadingCoeffPoly
-    (h : Step1PropagationNestedLargenessAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    HasDominantTopCoeff (step1PropagationLeadingCoeffPoly θ w m) :=
-  hasDominantTopCoeff_step1PropagationLeadingCoeffPoly_of_depth h.polynomialFamily hm
-
-/-- The remaining pointwise nonvanishing field, rewritten in the exact
-`NestedTailFamily` step form consumed by the nested-largeness API. -/
-theorem leadingCoeff_ne_on_region_step
-    (h : Step1PropagationNestedLargenessAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    ∀ x : Fin m → ℂ,
-      x ∈ (step1PropagationNestedTailFamily θ w).region m →
-        ((step1PropagationNestedTailFamily θ w).step m).lead x ≠ 0 := by
-  intro x hx
-  simpa using h.leadingCoeff_ne_on_region m hm x hx
-
-/-- The remaining pointwise nonvanishing field, rewritten for the polynomial-backed
-concrete propagation-tail package. -/
-theorem leadingCoeff_ne_on_region_tailData
-    (h : Step1PropagationNestedLargenessAssumptionsForDepth L d θ w iota)
-    {m : Nat} (hm : m < L - 1) :
-    ∀ x : Fin m → ℂ,
-      x ∈ (step1PropagationPolynomialNestedTailData θ w).region m →
-        ((step1PropagationPolynomialNestedTailData θ w).tailData m).presentation.lead x
-          ≠ 0 := by
-  intro x hx
-  simpa using h.leadingCoeff_ne_on_region m hm x hx
 
 end Step1PropagationNestedLargenessAssumptionsForDepth
 

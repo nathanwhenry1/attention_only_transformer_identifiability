@@ -148,13 +148,6 @@ theorem mvpoly_eval_null' {ι : Type*} [Fintype ι] [DecidableEq ι]
   have := (rename_injective (⇑ev) ev.injective).ne hp
   simpa using this
 
-/-- The zero set of a real multivariate polynomial is closed. -/
-theorem isClosed_eval_zero_set {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (p : MvPolynomial ι ℝ) :
-    IsClosed {x : ι → ℝ | (MvPolynomial.eval x) p = 0} := by
-  simpa using (isClosed_singleton.preimage (MvPolynomial.continuous_eval p) :
-    IsClosed ((fun x : ι → ℝ => (MvPolynomial.eval x) p) ⁻¹' ({0} : Set ℝ)))
-
 /-- The nonvanishing set `{p ≠ 0}` is open: it is the preimage of the open set `{0}ᶜ`
 under the continuous evaluation map. -/
 theorem isOpen_eval_ne_zero {ι : Type*} [Fintype ι] [DecidableEq ι] (p : MvPolynomial ι ℝ) :
@@ -223,16 +216,6 @@ theorem dense_forall_eval_ne_zero_finset {ι κ : Type*} [Fintype ι] [Decidable
   rw [hset] at hprodDense
   exact hprodDense
 
-/-- Finset-indexed common nonvanishing point in any nonempty open set. -/
-theorem exists_mem_forall_eval_ne_zero_finset {ι κ : Type*} [Fintype ι] [DecidableEq ι]
-    {s : Finset κ} {p : κ → MvPolynomial ι ℝ}
-    (hp : ∀ a, a ∈ s → p a ≠ 0)
-    {U : Set (ι → ℝ)} (hU : IsOpen U) (hUne : U.Nonempty) :
-    ∃ x ∈ U, ∀ a, a ∈ s → (MvPolynomial.eval x) (p a) ≠ 0 := by
-  obtain ⟨x, hxU, hxne⟩ :=
-    (dense_forall_eval_ne_zero_finset hp).inter_open_nonempty U hU hUne
-  exact ⟨x, hxU, hxne⟩
-
 /-- Packaged finite family of nonzero real multivariate polynomials.  Its carrier is
 the common nonvanishing locus, the basic open dense set used throughout the genericity
 argument. -/
@@ -257,40 +240,6 @@ theorem dense_carrier {ι κ : Type*} [Fintype ι] [DecidableEq ι]
     Dense D.carrier := by
   simpa [carrier] using dense_forall_eval_ne_zero_finset D.nonzero
 
-/-- A packaged finite nonvanishing family meets every nonempty open set. -/
-theorem exists_mem_open {ι κ : Type*} [Fintype ι] [DecidableEq ι]
-    (D : PolynomialNonvanishingData ι κ)
-    {U : Set (ι -> ℝ)} (hU : IsOpen U) (hUne : U.Nonempty) :
-    ∃ x ∈ U, x ∈ D.carrier := by
-  obtain ⟨x, hxU, hxne⟩ :=
-    exists_mem_forall_eval_ne_zero_finset (s := D.indices) (p := D.poly)
-      D.nonzero hU hUne
-  exact ⟨x, hxU, by simpa [carrier] using hxne⟩
-
-/-- The exceptional set complementary to a packaged finite polynomial nonvanishing
-locus is Lebesgue-null.  Equivalently, it is the zero set of the product of the
-packaged nonzero polynomials. -/
-theorem null_compl_carrier {ι κ : Type*} [Fintype ι] [DecidableEq ι]
-    (D : PolynomialNonvanishingData ι κ) :
-    volume D.carrierᶜ = 0 := by
-  classical
-  set p : MvPolynomial ι ℝ := ∏ a ∈ D.indices, D.poly a with hp_def
-  have hp : p ≠ 0 := by
-    rw [hp_def]
-    exact mvpoly_finset_prod_ne_zero D.nonzero
-  have hset : D.carrierᶜ = {x : ι -> ℝ | (MvPolynomial.eval x) p = 0} := by
-    ext x
-    constructor
-    · intro hx
-      by_contra hne
-      exact hx ((eval_finset_prod_ne_zero_iff (s := D.indices) (p := D.poly) x).mp
-        (by simpa [hp_def] using hne))
-    · intro hx hcarrier
-      exact ((eval_finset_prod_ne_zero_iff (s := D.indices) (p := D.poly) x).mpr
-        (by simpa [carrier] using hcarrier)) hx
-  rw [hset]
-  exact mvpoly_eval_null' p hp
-
 end PolynomialNonvanishingData
 
 /-- **Identity theorem for polynomials.**  A polynomial vanishing on a nonempty open set
@@ -302,55 +251,11 @@ theorem eq_zero_of_eval_eqOn_isOpen {ι : Type*} [Fintype ι] [DecidableEq ι]
   obtain ⟨x, hxU, hxne⟩ := (dense_compl_zero_set p hne).inter_open_nonempty U hU hUne
   exact hxne (hp x hxU)
 
-/-- The zero set of a nonzero polynomial has **empty interior** (`lem:zariski`). -/
-theorem interior_eval_zero_set_eq_empty {ι : Type*} [Fintype ι] [DecidableEq ι]
-    {p : MvPolynomial ι ℝ} (hp : p ≠ 0) :
-    interior {x : ι → ℝ | (MvPolynomial.eval x) p = 0} = ∅ := by
-  rw [interior_eq_empty_iff_dense_compl]
-  exact dense_compl_zero_set p hp
-
-/-- **Common nonvanishing point.**  Finitely many nonzero polynomials have a common
-nonvanishing point in any nonempty open set. -/
-theorem exists_mem_forall_eval_ne_zero {ι : Type*} [Fintype ι]
-    {n : ℕ} {p : Fin n → MvPolynomial ι ℝ} (hp : ∀ i, p i ≠ 0)
-    {U : Set (ι → ℝ)} (hU : IsOpen U) (hUne : U.Nonempty) :
-    ∃ x ∈ U, ∀ i, (MvPolynomial.eval x) (p i) ≠ 0 := by
-  classical
-  have hprod : (∏ i, p i) ≠ 0 := Finset.prod_ne_zero_iff.mpr fun i _ => hp i
-  obtain ⟨x, hxU, hxne⟩ :=
-    (dense_compl_zero_set (∏ i, p i) hprod).inter_open_nonempty U hU hUne
-  refine ⟨x, hxU, fun i hzero => hxne ?_⟩
-  rw [map_prod]
-  exact Finset.prod_eq_zero (Finset.mem_univ i) hzero
-
 /-! ## Proper linear subspaces
 
 The final clause of `lem:zariski`: a finite union of proper linear subspaces of a
 finite-dimensional real vector space is Lebesgue (Haar) null, hence has empty interior.
 This is used in Section 3, where the exceptional set `N` is a finite union of proper
 algebraic subsets of the parameter space. -/
-
-/-- A finite union of proper linear subspaces of a finite-dimensional real vector space is
-Haar-null. -/
-theorem measure_iUnion_subspace_null {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] (μ : Measure E)
-    [μ.IsAddHaarMeasure] {n : ℕ} (V : Fin n → Submodule ℝ E) (hV : ∀ i, V i ≠ ⊤) :
-    μ (⋃ i, (V i : Set E)) = 0 :=
-  measure_iUnion_null fun i => Measure.addHaar_submodule μ (V i) (hV i)
-
-/-- A finite union of proper linear subspaces has **empty interior** (`lem:zariski`, final
-clause). -/
-theorem interior_iUnion_subspace_eq_empty {E : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
-    (μ : Measure E) [μ.IsAddHaarMeasure] {n : ℕ} (V : Fin n → Submodule ℝ E)
-    (hV : ∀ i, V i ≠ ⊤) : interior (⋃ i, (V i : Set E)) = ∅ := by
-  rw [Set.eq_empty_iff_forall_notMem]
-  intro x hx
-  have hpos : 0 < μ (interior (⋃ i, (V i : Set E))) :=
-    isOpen_interior.measure_pos μ ⟨x, hx⟩
-  have hle : μ (interior (⋃ i, (V i : Set E))) ≤ μ (⋃ i, (V i : Set E)) :=
-    measure_mono interior_subset
-  rw [measure_iUnion_subspace_null μ V hV, nonpos_iff_eq_zero] at hle
-  exact hpos.ne' hle
 
 end TransformerIdentifiability.NLayer

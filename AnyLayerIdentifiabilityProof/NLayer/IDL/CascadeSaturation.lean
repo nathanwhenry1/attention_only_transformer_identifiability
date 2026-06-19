@@ -58,34 +58,10 @@ def congr_of_forall_eq {f g : ℝ → ℝ} {a b : ℝ}
   intro τ hτ
   simpa [← hfg τ, ← hab] using h.bound τ hτ
 
-/-- Eventually equal functions and equal limits preserve exponential closeness. -/
-noncomputable def congr_of_eventually_eq {f g : ℝ → ℝ} {a b : ℝ}
-    (h : EventuallyExpClose f a) (hfg : ∀ᶠ τ : ℝ in atTop, f τ = g τ)
-    (hab : a = b) :
-    EventuallyExpClose g b := by
-  let T := Classical.choose (eventually_atTop.1 hfg)
-  have hT : ∀ τ : ℝ, T ≤ τ → f τ = g τ :=
-    Classical.choose_spec (eventually_atTop.1 hfg)
-  refine ⟨h.rate, h.rate_pos, h.coeff, h.coeff_nonneg, max h.start T, ?_⟩
-  intro τ hτ
-  have hτ_start : h.start ≤ τ := le_trans (le_max_left _ _) hτ
-  have hτ_T : T ≤ τ := le_trans (le_max_right _ _) hτ
-  simpa [← hT τ hτ_T, ← hab] using h.bound τ hτ_start
-
 /-- A pointwise constant path is exponentially close with zero error. -/
 def of_forall_eq {f : ℝ → ℝ} {a : ℝ} (hfa : ∀ τ : ℝ, f τ = a) :
     EventuallyExpClose f a :=
   (refl a).congr_of_forall_eq (fun τ => (hfa τ).symm) rfl
-
-/-- An eventually constant path is exponentially close with zero error after its
-constant tail begins. -/
-noncomputable def of_eventually_eq_const {f : ℝ → ℝ} {a : ℝ}
-    (hfa : ∀ᶠ τ : ℝ in atTop, f τ = a) :
-    EventuallyExpClose f a := by
-  have hsymm : ∀ᶠ τ : ℝ in atTop, (fun _ : ℝ => a) τ = f τ := by
-    filter_upwards [hfa] with τ hτ
-    exact hτ.symm
-  exact (refl a).congr_of_eventually_eq hsymm rfl
 
 /-- Negating an exponentially-close family negates its limit. -/
 def neg {f : ℝ → ℝ} {a : ℝ} (h : EventuallyExpClose f a) :

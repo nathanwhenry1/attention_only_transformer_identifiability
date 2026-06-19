@@ -33,11 +33,6 @@ theorem hasDominantTopCoeff_prod (F : DominantPolynomialFamily ι σ R) (s : Fin
     HasDominantTopCoeff (∏ a ∈ s, F.poly a) :=
   HasDominantTopCoeff.prod s F.hasDominantTopCoeff
 
-/-- In particular, a finite product of a dominant polynomial family is nonzero. -/
-theorem prod_ne_zero (F : DominantPolynomialFamily ι σ R) (s : Finset ι) :
-    (∏ a ∈ s, F.poly a) ≠ 0 :=
-  (F.hasDominantTopCoeff_prod s).ne_zero
-
 end DominantPolynomialFamily
 
 /-! ## One-step evaluator presentations -/
@@ -250,19 +245,6 @@ theorem continuous_polynomialTailPresentation_lower {m : Nat}
   dsimp [polynomialTailPresentation]
   exact MvPolynomial.continuous_eval _
 
-/-- On-set version of continuity for the extracted leading coefficient evaluator. -/
-theorem continuousOn_polynomialTailPresentation_lead {m : Nat}
-    (p : MvPolynomial (Fin (m + 1)) ℂ) {U : Set (Fin m -> ℂ)} :
-    ContinuousOn (polynomialTailPresentation p).lead U :=
-  (continuous_polynomialTailPresentation_lead p).continuousOn
-
-/-- On-set version of continuity for the extracted lower coefficient evaluators. -/
-theorem continuousOn_polynomialTailPresentation_lower {m : Nat}
-    (p : MvPolynomial (Fin (m + 1)) ℂ) {U : Set (Fin m -> ℂ)}
-    (i : Fin (polynomialTailPresentation p).degree) :
-    ContinuousOn ((polynomialTailPresentation p).lower i) U :=
-  (continuous_polynomialTailPresentation_lower p i).continuousOn
-
 /-- Compiled data interface for downstream workers that want to consume an arbitrary
 polynomial tail presentation without unfolding the construction. -/
 structure PolynomialTailPresentationData (m : Nat) where
@@ -310,20 +292,6 @@ def NestedRegion (R : (m : Nat) -> (Fin m -> ℂ) -> ℝ) :
     z ∈ NestedRegion R (m + 1) ↔
       nestedInit z ∈ NestedRegion R m ∧ R m (nestedInit z) < ‖nestedLast z‖ :=
   Iff.rfl
-
-/-- Membership in `N_{m+1}` gives membership of the prefix in `N_m`. -/
-theorem nestedInit_mem_of_mem_nestedRegion
-    {R : (m : Nat) -> (Fin m -> ℂ) -> ℝ} {m : Nat} {z : Fin (m + 1) -> ℂ}
-    (hz : z ∈ NestedRegion R (m + 1)) :
-    nestedInit z ∈ NestedRegion R m :=
-  hz.1
-
-/-- Membership in `N_{m+1}` gives the threshold inequality for the last coordinate. -/
-theorem nestedLast_large_of_mem_nestedRegion
-    {R : (m : Nat) -> (Fin m -> ℂ) -> ℝ} {m : Nat} {z : Fin (m + 1) -> ℂ}
-    (hz : z ∈ NestedRegion R (m + 1)) :
-    R m (nestedInit z) < ‖nestedLast z‖ :=
-  hz.2
 
 /-- If each threshold is continuous on the previous nested region, then every nested
 region is open. -/
@@ -492,13 +460,6 @@ theorem zeroFreeRegion_evalStep_ne_zero_of_mem_succ (F : NestedTailFamily) {m : 
     (F.lead_ne_of_mem_zeroFreeRegion (F.nestedInit_mem_of_mem_zeroFreeRegion hz))
     (by
       simpa [threshold] using F.nestedLast_large_of_mem_zeroFreeRegion hz)
-
-/-- Short alias for nonvanishing of the one-step evaluator on zero-free regions. -/
-theorem evalStep_ne_zero_of_mem_zeroFreeRegion (F : NestedTailFamily) {m : Nat}
-    {z : Fin (m + 1) -> ℂ}
-    (hz : z ∈ F.zeroFreeRegion (m + 1)) :
-    F.evalStep z ≠ 0 :=
-  F.zeroFreeRegion_evalStep_ne_zero_of_mem_succ hz
 
 /-- Openness of the strengthened zero-free regions from continuous leading and lower
 coefficient functions in every one-step presentation. -/
@@ -821,39 +782,6 @@ theorem ofPolynomials_evalStep_eq_eval
     {m : Nat} (z : Fin (m + 1) -> ℂ) :
     (ofPolynomials p).evalStep z = MvPolynomial.eval z (p m) := by
   simpa using (ofPolynomials p).evalStep_eq_eval z
-
-/-- Openness of the canonical polynomial tower's zero-free nested regions. -/
-theorem ofPolynomials_isOpen_zeroFreeRegion
-    (p : (m : Nat) -> MvPolynomial (Fin (m + 1)) ℂ) :
-    ∀ m : Nat, IsOpen ((ofPolynomials p).zeroFreeRegion m) :=
-  (ofPolynomials p).isOpen_zeroFreeRegion
-
-/-- Threshold continuity for the canonical polynomial tower, assuming each extracted
-leading coefficient is nonzero on its nested region. -/
-theorem ofPolynomials_continuousOn_thresholds_of_lead_ne
-    (p : (m : Nat) -> MvPolynomial (Fin (m + 1)) ℂ)
-    (hlead_ne :
-      ∀ m : Nat, ∀ x ∈ (ofPolynomials p).region m,
-        (polynomialTailPresentation (p m)).lead x ≠ 0) :
-    ∀ m : Nat,
-      ContinuousOn ((ofPolynomials p).threshold m) ((ofPolynomials p).region m) := by
-  exact (ofPolynomials p).continuousOn_thresholds_of_lead_ne
-    (by
-      intro m x hx
-      simpa using hlead_ne m x hx)
-
-/-- Openness of the canonical polynomial nested regions from nonvanishing of the
-extracted leading coefficients on those regions. -/
-theorem ofPolynomials_isOpen_region_of_lead_ne
-    (p : (m : Nat) -> MvPolynomial (Fin (m + 1)) ℂ)
-    (hlead_ne :
-      ∀ m : Nat, ∀ x ∈ (ofPolynomials p).region m,
-        (polynomialTailPresentation (p m)).lead x ≠ 0) :
-    ∀ m : Nat, IsOpen ((ofPolynomials p).region m) := by
-  exact (ofPolynomials p).isOpen_region_of_lead_ne
-    (by
-      intro m x hx
-      simpa using hlead_ne m x hx)
 
 end PolynomialNestedTailData
 

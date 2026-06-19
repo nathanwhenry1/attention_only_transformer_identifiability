@@ -198,24 +198,6 @@ noncomputable def saturates_selected
       (B.slope_nonzero x hxU1)
   simpa [B.selected_matches_slope x hxU1] using hstep
 
-/-- Case 1 one-step induction invariant for the extended tail. -/
-noncomputable def next_prior_saturates
-    (B : CascadeNonzeroBranchData θ A Ustar U0 level tail unprimed) :
-    ∀ x ∈ Ustar, ∀ n : Nat, 1 ≤ n → n < level + 1 →
-      EventuallyExpClose (fun τ => unprimed n x τ)
-        (cascadeTailExtend tail level B.selected (n - 1)) := by
-  intro x hx n hn_pos hn_lt
-  by_cases hn_prior : n < level
-  · rw [cascadeTailExtend_prior hn_pos hn_prior B.selected]
-    exact B.step.prior_saturates x
-      (B.U1_subset_current (B.Ustar_subset_component hx)) n hn_pos hn_prior
-  · have hn_le : n ≤ level := Nat.lt_succ_iff.mp hn_lt
-    have hlevel_le : level ≤ n := Nat.le_of_not_gt hn_prior
-    have hn_eq : n = level := Nat.le_antisymm hn_le hlevel_le
-    subst n
-    rw [cascadeTailExtend_level B.step.level_pos B.selected]
-    exact B.saturates_selected x hx
-
 end CascadeNonzeroBranchData
 
 /-- Case 2 data for a level: zero formal slope on the current component, plus the
@@ -315,23 +297,6 @@ noncomputable def saturates_alpha
     (fun x hx n hn_pos hn_lt =>
       B.step.prior_saturates x (B.Ustar_subset_current hx) n hn_pos hn_lt)
 
-/-- Case 2 one-step induction invariant for the extended alpha tail. -/
-noncomputable def next_prior_saturates
-    (B : CascadeZeroAlphaBranchData b θ A Ustar U0 levelPred tail unprimed) :
-    ∀ x ∈ Ustar, ∀ n : Nat, 1 ≤ n → n < (levelPred + 1) + 1 →
-      EventuallyExpClose (fun τ => unprimed n x τ)
-        (cascadeTailExtend tail (levelPred + 1) (sig b) (n - 1)) := by
-  intro x hx n hn_pos hn_lt
-  by_cases hn_prior : n < levelPred + 1
-  · rw [cascadeTailExtend_prior hn_pos hn_prior (sig b)]
-    exact B.step.prior_saturates x (B.Ustar_subset_current hx) n hn_pos hn_prior
-  · have hn_le : n ≤ levelPred + 1 := Nat.lt_succ_iff.mp hn_lt
-    have hlevel_le : levelPred + 1 ≤ n := Nat.le_of_not_gt hn_prior
-    have hn_eq : n = levelPred + 1 := Nat.le_antisymm hn_le hlevel_le
-    subst n
-    rw [cascadeTailExtend_level B.step.level_pos (sig b)]
-    exact B.saturates_alpha x hx
-
 end CascadeZeroAlphaBranchData
 
 /-- A level-local source for the unprimed trichotomy saturation constant. -/
@@ -354,12 +319,6 @@ variable {L d : Nat} {b : ℝ} {θ : Params L d}
 variable {A : Matrix (Fin d) (Fin d) ℝ}
 variable {Ustar : Set (ProbePair d × ℝ)} {unprimed : GateAlongBase d}
 variable {level : Nat} {value : ℝ}
-
-/-- Package nonzero-branch data as a level source at its selected constant. -/
-def ofNonzeroBranchData {U0 : Set (ProbePair d × ℝ)} {tail : Nat → ℝ}
-    (B : CascadeNonzeroBranchData θ A Ustar U0 level tail unprimed) :
-    CascadeLevelBranchSource b θ A Ustar unprimed level B.selected :=
-  CascadeLevelBranchSource.nonzero B rfl
 
 /-- Build a nonzero branch source directly from a prepared cascade step and the
 selected nonzero component. -/
@@ -765,23 +724,5 @@ noncomputable def toProviderData
   primed_saturates_one := primed_saturates_one
 
 end CascadeInductionState
-
-/-- Constructor wrapper from the provider-facing API to builder data. -/
-noncomputable def cascadeTrichotomyBuilderData_of_inductionProvider {L d : Nat} {b : ℝ}
-    {θ : Params L d} {A : Matrix (Fin d) (Fin d) ℝ}
-    {signU : Set (ProbePair d × ℝ)}
-    {unprimed primed : GateAlongBase d}
-    (P : CascadeTrichotomyInductionProviderData b θ A signU unprimed primed) :
-    CascadeTrichotomyBuilderData b θ A signU P.Ustar unprimed primed :=
-  P.toBuilderData
-
-/-- Constructor wrapper for callers that prefer a theorem-shaped API. -/
-noncomputable def trichotomyData_of_cascadeBuilder {L d : Nat} {b : ℝ}
-    {θ : Params L d} {A : Matrix (Fin d) (Fin d) ℝ}
-    {signU Ustar : Set (ProbePair d × ℝ)}
-    {unprimed primed : GateAlongBase d}
-    (B : CascadeTrichotomyBuilderData b θ A signU Ustar unprimed primed) :
-    TrichotomyData (L := L) (d := d) b signU Ustar unprimed primed :=
-  B.toTrichotomyData
 
 end TransformerIdentifiability.NLayer
