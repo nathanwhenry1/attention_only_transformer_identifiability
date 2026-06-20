@@ -1,5 +1,4 @@
 import Mathlib
-import AnyLayerIdentifiabilityProof.TwoLayerIdentifiability
 import AnyLayerIdentifiabilityProof.NLayer.Genericity.GenericityMain
 import AnyLayerIdentifiabilityProof.NLayer.Genericity.TexGenericOpenDense
 import AnyLayerIdentifiabilityProof.NLayer.Genericity.TexGenericNull
@@ -21,14 +20,6 @@ This module is allowed to import the larger project proof files.  The public fil
 kept to the trusted model definitions and, once the all-depth theorem is available, a
 one-line reference to the theorem exported from this module.
 -/
-
-/-! ## Depth-two bridge -/
-
-@[simp] theorem attnLayer_eq_twoLayer {d T : ℕ}
-    (V A : Matrix (Fin d) (Fin d) ℝ)
-    (X : Matrix (Fin d) (Fin T) ℝ) :
-    NLayer.attnLayer V A X = TwoLayer.attnLayer V A X := by
-  rfl
 
 /-! ## All-depth wrap-up bridge -/
 

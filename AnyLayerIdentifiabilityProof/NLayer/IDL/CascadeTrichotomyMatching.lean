@@ -1,4 +1,4 @@
-import AnyLayerIdentifiabilityProof.NLayer.IDL.CascadeUnprimedMatching
+import AnyLayerIdentifiabilityProof.NLayer.IDL.CascadePrimedMatching
 import AnyLayerIdentifiabilityProof.NLayer.IDL.CascadeAlphaError
 
 set_option autoImplicit false
