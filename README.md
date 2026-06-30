@@ -12,6 +12,8 @@ This repository contains a complete Lean 4 formalization of an identifiability t
 for attention-only transformers, stating that the parameters for a generic such network is determined exactly, layer by
 layer, by the function it computes, after merging QK matrices and OV matrices, and also only considering one head per layer.
 
+The proof was written by Fable 5 and formalized by Codex, using some proof ideas that I provided in the prompt.
+
 ## Result
 
 Consider an `L`-layer attention-only transformer with causal masking, one attention
