@@ -9,8 +9,8 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 This repository contains a complete Lean 4 formalization of an identifiability theorem
-for attention-only transformers: a generic such network is determined exactly, layer by
-layer, by the function it computes.
+for attention-only transformers, stating that the parameters for a generic such network is determined exactly, layer by
+layer, by the function it computes, after merging QK matrices and OV matrices, and also only considering one head per layer.
 
 ## Result
 
