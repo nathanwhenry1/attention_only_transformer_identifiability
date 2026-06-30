@@ -1878,7 +1878,7 @@ from the canonical solved-coordinate trichotomy route.
 
 This mirrors
 `texGenericProbeAgreementProbeCoordSplitBaseTailZeroFreeConcreteBuilderSelectedTailCanonicalIFTCurrentConstructorData_of_localRegion_solvedCoordChartCanonicalGates_lowerDepthSelectedTail`,
-	but keeps the remaining recursive leaf as the threaded matching provider. -/
+but keeps the remaining recursive leaf as the threaded matching provider. -/
 noncomputable def
     texGenericProbeAgreementProbeCoordSplitBaseTailZeroFreeConcreteBuilderSelectedTailCanonicalIFTThreadedCurrentConstructorData_of_localRegion_solvedCoordChartCanonicalGates_lowerDepthSelectedTail
     {L d r : Nat} (hL : 1 <= L + 2) (hr : 2 <= r) (hd : 2 <= d)

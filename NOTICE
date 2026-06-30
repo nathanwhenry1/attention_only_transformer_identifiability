@@ -1,0 +1,11 @@
+Identifiability of deep causal attention-only transformers with skip
+connections: Lean 4 formalization
+
+Copyright 2026 Nathan W. Henry
+
+The Lean source code and repository documentation are licensed under the
+Apache License, Version 2.0. See LICENSE for the full text.
+
+The Lean formalization was developed with the assistance of large language
+models, including Claude (Anthropic). Nathan W. Henry is responsible for the
+final mathematical claims and exposition.

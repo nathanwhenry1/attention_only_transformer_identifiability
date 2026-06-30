@@ -7,8 +7,6 @@ open MeasureTheory Matrix
 
 namespace TransformerIdentifiability
 
-/-! ## Trusted base — verify this section by hand -/
-
 /-- Column-wise causal softmax: entry `(i, j)` is
 `exp (M i j) / ∑_{i' ≤ j} exp (M i' j)` for `i ≤ j`, and `0` otherwise. -/
 noncomputable def causalSoftmax {T : ℕ} (M : Matrix (Fin T) (Fin T) ℝ) :
@@ -70,6 +68,7 @@ For depth `L ≥ 1`, context multiplicity `r ≥ 2` (sequence length `r + 1`) an
 dimension `d ≥ max 2 (C(L,2) + 2(L-1))`, there is a Lebesgue-null set `N` of
 parameters such that every `θ'` outside `N` is identified, among *all*
 parameters, by the input-output map of its network. -/
+
 theorem identifiability (L r d : ℕ) (hL : 1 ≤ L) (hr : 2 ≤ r)
     (hd₁ : 2 ≤ d) (hd₂ : Nat.choose L 2 + 2 * (L - 1) ≤ d) :
     ∃ N : Set (Params L d), volume N = 0 ∧
@@ -80,5 +79,10 @@ theorem identifiability (L r d : ℕ) (hL : 1 ≤ L) (hr : 2 ≤ r)
   simpa [Params, transformer, attnLayer, causalSoftmax,
     NLayer.transformer, NLayer.attnLayer, NLayer.causalSoftmax] using
     IdentifiabilityProof.identifiability_all_depth L r d hL hr hd₁ hd₂
+
+-- Kernel dependency report for the public theorem.  CI re-elaborates this file and
+-- checks that the printed dependencies are limited to the standard Lean principles
+-- `propext`, `Classical.choice`, and `Quot.sound` (in particular, no `sorryAx`).
+#print axioms identifiability
 
 end TransformerIdentifiability
