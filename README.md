@@ -119,8 +119,3 @@ Lean and Mathlib are pinned to `v4.30.0` in `lean-toolchain` and `lake-manifest.
 ```
 
 See [`CITATION.cff`](CITATION.cff) for machine-readable metadata.
-
-## License
-
-The Lean code and repository documentation are licensed under Apache-2.0. The paper
-remains copyright Nathan W. Henry. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
