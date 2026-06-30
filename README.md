@@ -43,31 +43,15 @@ TransformerIdentifiability.identifiability :
 
 - **For the model and the final theorem:** open
   [`AnyLayerIdentifiabilityProof/Identifiability.lean`](AnyLayerIdentifiabilityProof/Identifiability.lean)
-  — it holds the trusted model definitions (`causalSoftmax`, `attnLayer`,
+  — it holds the model definitions (`causalSoftmax`, `attnLayer`,
   `transformer`) and the public theorem, then defers to
   [`AnyLayerIdentifiabilityProof/IdentifiabilityProof.lean`](AnyLayerIdentifiabilityProof/IdentifiabilityProof.lean).
 - **For the result statement:** read [`problem_statement.md`](problem_statement.md).
-- **For verification details:** see [Trust boundary](#trust-boundary) below and
-  inspect the GitHub Actions run.
+- **For verification details:** inspect the GitHub Actions run.
 
 ## Proof at a glance
 
-The proof is by induction on depth.
-
-- **Step 1 — identify the innermost attention matrix.** Complex-analytic continuation
-  in an inverse-temperature variable identifies the attention matrix through an
-  `L`-tier hierarchy of accumulating singularities, in the spirit of Fefferman's
-  reconstruction of `tanh` networks.
-- **Step 2 — saturated limits, trichotomy, and matching.** Everything thereafter is
-  real-variable: exact saturated limits of the attention gates along dialed input
-  paths, and a structural trichotomy that eliminates all exotic saturation profiles by
-  linear algebra.
-- **Step 3 — realization, the sweep, and the K = I identity.** A cancellation identity
-  created by the skip connections removes any dependence on the unknown parameter's
-  saturation pattern, and a realization/sweep argument closes the induction.
-
-All genericity conditions are explicit polynomial nonvanishing conditions with verified
-witnesses.
+The proof is by induction on depth, inspired by Fefferman's related proof of identifiability of `tanh` networks in "Reconstructing a neural net from its output" (1994). We 
 
 ## Repository contents
 
@@ -78,7 +62,7 @@ witnesses.
 │   ├── Identifiability.lean                    # Trusted model defs + public theorem `identifiability`
 │   ├── IdentifiabilityProof.lean               # Proof bridge → all-depth core
 │   └── NLayer/
-│       ├── IdentifiabilityMain.lean            # All-depth assembly (MainTheoremData)
+│       ├── IdentifiabilityMain.lean            # All-depth assembly
 │       ├── Foundations/                         # Polynomial genericity / Zariski foundations  (4 files)
 │       ├── Analytic/                            # Toolkit: complex-analytic, stratification, quadric  (8 files)
 │       ├── Step1/                               # Step 1: attention-matrix identification  (12 files)
@@ -121,23 +105,6 @@ make axioms    # print and check final kernel dependencies
 ```
 
 Lean and Mathlib are pinned to `v4.30.0` in `lean-toolchain` and `lake-manifest.json`.
-
-## Trust boundary
-
-The trusted base is the model definition in
-[`AnyLayerIdentifiabilityProof/Identifiability.lean`](AnyLayerIdentifiabilityProof/Identifiability.lean)
-— `causalSoftmax`, `attnLayer`, and `transformer` — together with the statement of the
-theorem. Everything else is proof.
-
-The active source passes the included comment-aware static audit with no admitted proof
-and no project-specific assumption declaration. The public file runs `#print axioms`.
-CI performs a clean build and checks that the reported dependencies are limited to:
-
-```text
-[propext, Classical.choice, Quot.sound]
-```
-
-These are standard Lean principles used through Mathlib.
 
 ## Citation
 
